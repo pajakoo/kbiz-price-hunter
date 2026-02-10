@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import ProductPriceChart from "@/app/products/ProductPriceChart";
+import FavoriteAlertToggle from "@/app/products/FavoriteAlertToggle";
 import { prisma } from "@/lib/prisma";
 import { getLocalizedProduct, getProduct } from "@/lib/products";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { getSession } from "@/lib/auth";
 
 type PageProps = {
   params: Promise<{ slug: string; locale: string }>;
@@ -17,6 +19,7 @@ type DisplayProduct = {
   priceNote: string;
   lastChecked: string;
   highlights: string[];
+  productId?: string;
 };
 
 async function getDisplayProduct(
@@ -33,6 +36,7 @@ async function getDisplayProduct(
       priceNote: dict.product.fallbackPriceNote,
       lastChecked: dict.product.fallbackLastChecked,
       highlights: dict.product.fallbackHighlights,
+      productId: dbProduct.id,
     };
   }
 
@@ -74,6 +78,15 @@ export default async function ProductPage({ params }: PageProps) {
   if (!product) {
     notFound();
   }
+  const session = await getSession();
+  const basePath = `/${normalizedLocale}`;
+  const subscription =
+    session && product.productId
+      ? await prisma.priceAlertSubscription.findUnique({
+          where: { userId_productId: { userId: session.user.id, productId: product.productId } },
+        })
+      : null;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -144,6 +157,22 @@ export default async function ProductPage({ params }: PageProps) {
           </div>
         </section>
 
+        {product.productId ? (
+          <FavoriteAlertToggle
+            productId={product.productId}
+            isAuthenticated={Boolean(session)}
+            isSubscribed={Boolean(subscription)}
+            loginHref={`${basePath}/login`}
+            title={dict.product.alertTitle}
+            body={dict.product.alertBody}
+            enableLabel={dict.product.alertEnable}
+            disableLabel={dict.product.alertDisable}
+            loginLabel={dict.product.alertLogin}
+            successEnabled={dict.product.alertEnabled}
+            successDisabled={dict.product.alertDisabled}
+            errorLabel={dict.product.alertError}
+          />
+        ) : null}
         <section className="section">
           <h2>Price history</h2>
           <div className="card">

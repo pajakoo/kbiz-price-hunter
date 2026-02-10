@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,7 +11,7 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { getProductHistory } from "@/lib/product-history";
+import { getProductHistory, type StoreSeries } from "@/lib/product-history";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
@@ -21,7 +21,34 @@ type Props = {
 };
 
 export default function ProductPriceChart({ slug, currencyLabel }: Props) {
-  const series = getProductHistory(slug);
+  const [series, setSeries] = useState<StoreSeries[]>(() => getProductHistory(slug));
+
+  useEffect(() => {
+    let active = true;
+    setSeries(getProductHistory(slug));
+
+    fetch(`/api/prices?productSlug=${encodeURIComponent(slug)}`)
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load price history");
+        }
+        return response.json() as Promise<{ series?: StoreSeries[] }>;
+      })
+      .then((payload) => {
+        if (!active) return;
+        if (payload.series && payload.series.length > 0) {
+          setSeries(payload.series);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setSeries(getProductHistory(slug));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [slug]);
 
   const chartData = useMemo(() => {
     const labels = Array.from(

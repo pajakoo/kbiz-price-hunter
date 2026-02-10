@@ -8,13 +8,15 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  name      String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  lists     ShoppingList[]
-  sessions  Session[]
+  id                     String                     @id @default(cuid())
+  email                  String                     @unique
+  name                   String?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  lists                  ShoppingList[]
+  sessions               Session[]
+  priceAlertSubscriptions PriceAlertSubscription[]
+  priceAlertNotifications PriceAlertNotification[]
 }
 
 model MagicLinkToken {
@@ -36,23 +38,26 @@ model Session {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  prices      Price[]
-  listItems   ShoppingListItem[]
+  id                     String                     @id @default(cuid())
+  slug                   String                     @unique
+  name                   String
+  description            String?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  prices                 Price[]
+  listItems              ShoppingListItem[]
+  priceAlertSubscriptions PriceAlertSubscription[]
+  priceAlertNotifications PriceAlertNotification[]
 }
 
 model Store {
-  id        String   @id @default(cuid())
-  name      String
-  city      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  prices    Price[]
+  id                     String                     @id @default(cuid())
+  name                   String
+  city                   String?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  prices                 Price[]
+  priceAlertNotifications PriceAlertNotification[]
 }
 
 model Price {
@@ -62,6 +67,32 @@ model Price {
   recordedAt DateTime @default(now())
   productId  String
   storeId    String
+  product    Product  @relation(fields: [productId], references: [id])
+  store      Store    @relation(fields: [storeId], references: [id])
+}
+
+model PriceAlertSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+}
+
+model PriceAlertNotification {
+  id         String   @id @default(cuid())
+  userId     String
+  productId  String
+  storeId    String
+  fromAmount Float
+  toAmount   Float
+  currency   String   @default("EUR")
+  recordedAt DateTime
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
   product    Product  @relation(fields: [productId], references: [id])
   store      Store    @relation(fields: [storeId], references: [id])
 }

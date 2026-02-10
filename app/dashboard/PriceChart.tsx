@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,14 +24,20 @@ type StoreSeries = {
   points: PricePoint[];
 };
 
-type ProductHistory = {
-  product: string;
+type ChartProduct = {
+  key: string;
+  label: string;
+  slug?: string;
+  source: "sample" | "db";
   series: StoreSeries[];
 };
 
-const SAMPLE_HISTORY: ProductHistory[] = [
+const SAMPLE_HISTORY: ChartProduct[] = [
   {
-    product: "Extra Virgin Olive Oil",
+    key: "olive-oil",
+    label: "Extra Virgin Olive Oil",
+    slug: "olive-oil",
+    source: "sample",
     series: [
       {
         store: "Market One",
@@ -54,7 +60,10 @@ const SAMPLE_HISTORY: ProductHistory[] = [
     ],
   },
   {
-    product: "Coffee Beans",
+    key: "coffee-beans",
+    label: "Coffee Beans",
+    slug: "coffee-beans",
+    source: "sample",
     series: [
       {
         store: "Market One",
@@ -84,7 +93,8 @@ type Props = {
   allStoresLabel: string;
   currencyLabel: string;
   emptyStateLabel: string;
-  extraProducts?: string[];
+  loadingLabel: string;
+  extraProducts?: { name: string; slug: string }[];
 };
 
 export default function PriceChart({
@@ -93,59 +103,127 @@ export default function PriceChart({
   allStoresLabel,
   currencyLabel,
   emptyStateLabel,
+  loadingLabel,
   extraProducts = [],
 }: Props) {
   const productOptions = useMemo(() => {
-    const existing = new Map(SAMPLE_HISTORY.map((item) => [item.product, item]));
+    const existing = new Set(SAMPLE_HISTORY.map((item) => item.key));
     const extras = extraProducts
-      .filter((name) => name && !existing.has(name))
-      .map((name) => ({
-        product: name,
-        series: [
-          {
-            store: "Market One",
-            points: [
-              { date: "2024-10-05", price: 11.2 },
-              { date: "2024-10-15", price: 10.7 },
-              { date: "2024-10-25", price: 10.1 },
-              { date: "2024-11-05", price: 9.8 },
-            ],
-          },
-          {
-            store: "Fresh Mart",
-            points: [
-              { date: "2024-10-05", price: 11.9 },
-              { date: "2024-10-15", price: 11.3 },
-              { date: "2024-10-25", price: 10.9 },
-              { date: "2024-11-05", price: 10.4 },
-            ],
-          },
-        ],
-      }));
-    return [...SAMPLE_HISTORY, ...extras];
+      .filter((item) => item?.name && item?.slug)
+      .map((item) => ({
+        key: item.slug,
+        label: item.name,
+        slug: item.slug,
+        source: "db" as const,
+        series: [],
+      }))
+      .filter((item) => !existing.has(item.key));
+
+    return extras.length ? [...extras, ...SAMPLE_HISTORY] : SAMPLE_HISTORY;
   }, [extraProducts]);
 
-  const [product, setProduct] = useState(productOptions[0]);
+  const initialProduct = useMemo(
+    () => productOptions.find((item) => item.source === "db") ?? productOptions[0],
+    [productOptions]
+  );
+
+  const [product, setProduct] = useState(initialProduct);
+  const preferredSet = useRef(false);
+  const [productQuery, setProductQuery] = useState("");
   const [storeFilter, setStoreFilter] = useState("all");
+  const [seriesOverride, setSeriesOverride] = useState<StoreSeries[] | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!productOptions.find((item) => item.product === product.product)) {
+    const preferred = productOptions.find((item) => item.source === "db");
+    if (!preferredSet.current && preferred) {
+      setProduct(preferred);
+      setStoreFilter("all");
+      preferredSet.current = true;
+    }
+  }, [productOptions]);
+
+  useEffect(() => {
+    if (!productOptions.find((item) => item.key === product.key)) {
       setProduct(productOptions[0]);
       setStoreFilter("all");
+      setSeriesOverride(null);
+      setLoading(false);
     }
-  }, [productOptions, product.product]);
+  }, [productOptions, product.key]);
+
+  useEffect(() => {
+    if (product.source !== "db" || !product.slug) {
+      setSeriesOverride(null);
+      setLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setLoading(true);
+    setSeriesOverride(null);
+
+    fetch(`/api/prices?productSlug=${encodeURIComponent(product.slug)}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load prices");
+        }
+        const payload = (await response.json()) as {
+          series?: StoreSeries[];
+        };
+        setSeriesOverride(payload.series ?? []);
+      })
+      .catch(() => {
+        setSeriesOverride([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [product]);
+
+  const activeSeries = product.source === "db" ? seriesOverride ?? [] : product.series;
+
+  const uniqueSeries = useMemo(() => {
+    const seen = new Set<string>();
+    return activeSeries.filter((series) => {
+      const key = series.points.map((point) => `${point.date}:${point.price}`).join("|");
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [activeSeries]);
 
   const storeOptions = useMemo(() => {
     const stores = new Set<string>();
-    product.series.forEach((series) => stores.add(series.store));
+    uniqueSeries.forEach((series) => stores.add(series.store));
     return ["all", ...Array.from(stores)];
-  }, [product]);
+  }, [uniqueSeries]);
+
+  const filteredProductOptions = useMemo(() => {
+    const query = productQuery.trim().toLowerCase();
+    if (!query) {
+      return productOptions;
+    }
+
+    const matches = productOptions.filter((item) => item.label.toLowerCase().includes(query));
+    if (matches.find((item) => item.key === product.key)) {
+      return matches;
+    }
+
+    return [product, ...matches];
+  }, [productOptions, productQuery, product]);
 
   const chartData = useMemo(() => {
     const filteredSeries =
       storeFilter === "all"
-        ? product.series
-        : product.series.filter((series) => series.store === storeFilter);
+        ? uniqueSeries
+        : uniqueSeries.filter((series) => series.store === storeFilter);
 
     const labels = Array.from(
       new Set(filteredSeries.flatMap((series) => series.points.map((point) => point.date)))
@@ -164,20 +242,39 @@ export default function PriceChart({
     }));
 
     return { labels, datasets };
-  }, [product, storeFilter]);
+  }, [uniqueSeries, storeFilter]);
+
+  const formatTickValue = (value: number | string) => {
+    const numeric = typeof value === "string" ? Number(value) : value;
+    if (!Number.isFinite(numeric)) {
+      return `${value} ${currencyLabel}`;
+    }
+    return `${numeric.toFixed(2)} ${currencyLabel}`;
+  };
 
   return (
     <section className="section">
       <div className="card">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 16 }}>
           <div>
+            <label htmlFor="product-search">Search products</label>
+            <input
+              id="product-search"
+              type="search"
+              value={productQuery}
+              onChange={(event) => setProductQuery(event.target.value)}
+              placeholder={productLabel}
+              style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)" }}
+            />
+          </div>
+          <div>
             <label htmlFor="product-select">{productLabel}</label>
             <select
               id="product-select"
-              value={product.product}
+              value={product.key}
               onChange={(event) => {
                 const selected = productOptions.find(
-                  (item) => item.product === event.target.value
+                  (item) => item.key === event.target.value
                 );
                 if (selected) {
                   setProduct(selected);
@@ -186,9 +283,9 @@ export default function PriceChart({
               }}
               style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)" }}
             >
-              {productOptions.map((item) => (
-                <option key={item.product} value={item.product}>
-                  {item.product}
+              {filteredProductOptions.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {item.label}
                 </option>
               ))}
             </select>
@@ -209,7 +306,9 @@ export default function PriceChart({
             </select>
           </div>
         </div>
-        {product.series.length === 0 ? (
+        {loading ? (
+          <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>{loadingLabel}</p>
+        ) : activeSeries.length === 0 ? (
           <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>{emptyStateLabel}</p>
         ) : (
           <Line
@@ -222,7 +321,7 @@ export default function PriceChart({
               scales: {
                 y: {
                   ticks: {
-                    callback: (value) => `${value} ${currencyLabel}`,
+                    callback: (value) => formatTickValue(value),
                   },
                 },
               },

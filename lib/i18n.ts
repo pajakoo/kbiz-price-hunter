@@ -34,6 +34,14 @@ type Dictionary = {
     fallbackPriceNote: string;
     fallbackLastChecked: string;
     fallbackHighlights: string[];
+    alertTitle: string;
+    alertBody: string;
+    alertEnable: string;
+    alertDisable: string;
+    alertLogin: string;
+    alertEnabled: string;
+    alertDisabled: string;
+    alertError: string;
   };
   login: {
     title: string;
@@ -70,12 +78,36 @@ type Dictionary = {
     recentProductsTitle: string;
     recentProductsBody: string;
     recentProductsEmpty: string;
+    importCsvTitle: string;
+    importCsvBody: string;
+    importCsvFileLabel: string;
+    importCsvDateLabel: string;
+    importCsvDateHelp: string;
+    importCsvSubmit: string;
+    importCsvSubmitting: string;
+    importCsvSuccess: string;
+    importCsvError: string;
+    priceDropsTitle: string;
+    priceDropsBody: string;
+    priceDropsEmpty: string;
+    priceAlertsTitle: string;
+    priceAlertsBody: string;
+    priceAlertsProductLabel: string;
+    priceAlertsSubmit: string;
+    priceAlertsSubmitting: string;
+    priceAlertsRemove: string;
+    priceAlertsEmpty: string;
+    priceAlertsStatusAdded: string;
+    priceAlertsStatusError: string;
+    priceAlertsNotificationsTitle: string;
+    priceAlertsNotificationsEmpty: string;
   };
   chart: {
     product: string;
     store: string;
     allStores: string;
     empty: string;
+    loading: string;
   };
   footer: {
     title: string;
@@ -145,6 +177,14 @@ const dictionary: Record<Locale, Dictionary> = {
       fallbackPriceNote: "Avg range: 8 - 24 EUR",
       fallbackLastChecked: "Updated just now",
       fallbackHighlights: ["Track price changes", "Compare stores", "Watch for promos"],
+      alertTitle: "Price drop alerts",
+      alertBody: "Get notified when this product drops in price.",
+      alertEnable: "Enable alert",
+      alertDisable: "Disable alert",
+      alertLogin: "Log in to enable alerts",
+      alertEnabled: "Alert enabled.",
+      alertDisabled: "Alert disabled.",
+      alertError: "Unable to update alert.",
     },
     login: {
       title: "Request a magic link",
@@ -183,6 +223,29 @@ const dictionary: Record<Locale, Dictionary> = {
       recentProductsTitle: "Recently added products",
       recentProductsBody: "Newest entries created via the dashboard form.",
       recentProductsEmpty: "No products added yet.",
+      importCsvTitle: "Import supplier CSV",
+      importCsvBody: "Upload the Zlatna Ribka CSV to import products and prices.",
+      importCsvFileLabel: "CSV file",
+      importCsvDateLabel: "Price date",
+      importCsvDateHelp: "All imported prices will use this date.",
+      importCsvSubmit: "Import CSV",
+      importCsvSubmitting: "Importing...",
+      importCsvSuccess: "Imported data for {name}.",
+      importCsvError: "Unable to import CSV.",
+      priceDropsTitle: "Price drops",
+      priceDropsBody: "Largest recent price reductions by store and product.",
+      priceDropsEmpty: "No price drops recorded yet.",
+      priceAlertsTitle: "Price alerts",
+      priceAlertsBody: "Get notified when your favorite products drop in price.",
+      priceAlertsProductLabel: "Favorite product",
+      priceAlertsSubmit: "Enable alert",
+      priceAlertsSubmitting: "Enabling...",
+      priceAlertsRemove: "Remove",
+      priceAlertsEmpty: "No favorite products yet.",
+      priceAlertsStatusAdded: "Alert updated.",
+      priceAlertsStatusError: "Unable to update alert.",
+      priceAlertsNotificationsTitle: "Recent alerts",
+      priceAlertsNotificationsEmpty: "No alerts yet.",
     },
     footer: {
       title: "Stay in control of prices.",
@@ -195,6 +258,7 @@ const dictionary: Record<Locale, Dictionary> = {
       store: "Store",
       allStores: "All stores",
       empty: "No price history yet.",
+      loading: "Loading price history...",
     },
   },
   bg: {
@@ -260,6 +324,14 @@ const dictionary: Record<Locale, Dictionary> = {
         "Сравнявай магазини",
         "Хващай промоции",
       ],
+      alertTitle: "Известия при намаление",
+      alertBody: "Ще получиш известие, когато този продукт поевтинее.",
+      alertEnable: "Включи известие",
+      alertDisable: "Изключи известие",
+      alertLogin: "Влез, за да включиш известие",
+      alertEnabled: "Известието е включено.",
+      alertDisabled: "Известието е изключено.",
+      alertError: "Неуспешно обновяване на известие.",
     },
     login: {
       title: "Вземи магически линк",
@@ -298,6 +370,29 @@ const dictionary: Record<Locale, Dictionary> = {
       recentProductsTitle: "Последно добавени продукти",
       recentProductsBody: "Най-новите записи, създадени през таблото.",
       recentProductsEmpty: "Все още няма добавени продукти.",
+      importCsvTitle: "Импорт на CSV",
+      importCsvBody: "Качи CSV файла от Златна Рибка, за да внесеш продукти и цени.",
+      importCsvFileLabel: "CSV файл",
+      importCsvDateLabel: "Дата на цената",
+      importCsvDateHelp: "Всички цени ще се запишат с тази дата.",
+      importCsvSubmit: "Импортирай CSV",
+      importCsvSubmitting: "Импортиране...",
+      importCsvSuccess: "Импортирани данни за {name}.",
+      importCsvError: "CSV файлът не можа да се импортира.",
+      priceDropsTitle: "Намаления на цени",
+      priceDropsBody: "Най-големите намаления по магазин и продукт.",
+      priceDropsEmpty: "Все още няма регистрирани намаления.",
+      priceAlertsTitle: "Известия за цена",
+      priceAlertsBody: "Известяваме те, когато любим продукт поевтинее.",
+      priceAlertsProductLabel: "Любим продукт",
+      priceAlertsSubmit: "Включи известие",
+      priceAlertsSubmitting: "Записване...",
+      priceAlertsRemove: "Премахни",
+      priceAlertsEmpty: "Все още няма любими продукти.",
+      priceAlertsStatusAdded: "Известието е обновено.",
+      priceAlertsStatusError: "Неуспешно обновяване на известие.",
+      priceAlertsNotificationsTitle: "Последни известия",
+      priceAlertsNotificationsEmpty: "Все още няма известия.",
     },
     footer: {
       title: "Дръж цените под контрол.",
@@ -310,6 +405,7 @@ const dictionary: Record<Locale, Dictionary> = {
       store: "Магазин",
       allStores: "Всички магазини",
       empty: "Все още няма история на цените.",
+      loading: "Зареждане на история на цените...",
     },
   },
 };

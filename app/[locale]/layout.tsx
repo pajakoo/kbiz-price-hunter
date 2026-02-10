@@ -2,6 +2,8 @@ import Link from "next/link";
 import ThemeToggle from "@/app/ThemeToggle";
 import LocaleSwitcher from "@/app/LocaleSwitcher";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export default async function LocaleLayout({
   children,
@@ -14,6 +16,11 @@ export default async function LocaleLayout({
   const normalizedLocale: Locale = locale === "bg" ? "bg" : "en";
   const dict = getDictionary(normalizedLocale);
   const basePath = `/${normalizedLocale}`;
+  const session = await getSession();
+  const alertCount = session
+    ? await prisma.priceAlertNotification.count({ where: { userId: session.user.id } })
+    : 0;
+  const alertLabel = alertCount > 9 ? "9+" : String(alertCount);
 
   return (
     <>
@@ -24,7 +31,10 @@ export default async function LocaleLayout({
           </Link>
           <nav className="nav-links">
             <Link href={`${basePath}/products`}>{dict.nav.products}</Link>
-            <Link href={`${basePath}/dashboard`}>{dict.nav.dashboard}</Link>
+            <Link href={`${basePath}/dashboard`} className="nav-alert">
+              {dict.nav.dashboard}
+              {alertCount > 0 ? <span className="nav-badge">{alertLabel}</span> : null}
+            </Link>
             <LocaleSwitcher locale={normalizedLocale} />
             <ThemeToggle />
             <Link href={`${basePath}/login`} className="button ghost">

@@ -1,6 +1,55 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { handlePriceDropAlert } from "@/lib/price-alerts";
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const productId = searchParams.get("productId")?.trim() ?? "";
+  const productSlug = searchParams.get("productSlug")?.trim() ?? "";
+
+  if (!productId && !productSlug) {
+    return NextResponse.json(
+      { ok: false, error: "productId or productSlug query param is required." },
+      { status: 400 }
+    );
+  }
+
+  const product = productId
+    ? await prisma.product.findUnique({ where: { id: productId } })
+    : await prisma.product.findUnique({ where: { slug: productSlug } });
+
+  if (!product) {
+    return NextResponse.json({ ok: false, error: "Product not found." }, { status: 404 });
+  }
+
+  const prices = await prisma.price.findMany({
+    where: { productId: product.id },
+    orderBy: { recordedAt: "asc" },
+    include: { store: true },
+  });
+
+  const series = prices.reduce<Record<string, { store: string; points: { date: string; price: number }[] }>>(
+    (acc, price) => {
+      const key = price.storeId;
+      if (!acc[key]) {
+        acc[key] = { store: price.store.name, points: [] };
+      }
+      acc[key].points.push({
+        date: price.recordedAt.toISOString().slice(0, 10),
+        price: price.amount,
+      });
+      return acc;
+    },
+    {}
+  );
+
+  return NextResponse.json({
+    ok: true,
+    product: { id: product.id, slug: product.slug, name: product.name },
+    series: Object.values(series),
+  });
+}
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -46,6 +95,16 @@ export async function POST(request: Request) {
       include: {
         product: true,
         store: true,
+      },
+    });
+
+    await handlePriceDropAlert({
+      product: { id: product.id, name: product.name, slug: product.slug },
+      store: { id: store.id, name: store.name },
+      newPrice: {
+        amount: price.amount,
+        currency: price.currency,
+        recordedAt: price.recordedAt,
       },
     });
 

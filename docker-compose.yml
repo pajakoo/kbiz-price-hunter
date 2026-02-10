@@ -18,8 +18,11 @@ services:
     environment:
       DATABASE_URL: postgresql://kbiz:kbiz@db:5432/kbiz_price_hunter
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NODE_OPTIONS: --max-old-space-size=4096
     ports:
       - "3000:3000"
+    volumes:
+      - ./data:/app/data:ro
 
 volumes:
   postgres_data:
