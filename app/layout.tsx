@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Manrope, Sora } from "next/font/google";
+import { Suspense } from "react";
 import Analytics from "@/app/Analytics";
 import "./globals.css";
 
@@ -50,7 +51,9 @@ window.gtag('config', '${gaId}');`}
             </Script>
           </>
         ) : null}
-        <Analytics gaId={gaId} />
+        <Suspense fallback={null}>
+          <Analytics gaId={gaId} />
+        </Suspense>
         {children}
       </body>
     </html>
