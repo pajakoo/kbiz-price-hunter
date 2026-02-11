@@ -295,6 +295,43 @@ html[data-theme="dark"] .pill {
   margin-bottom: 12px;
 }
 
+.chart-filter {
+  flex: 1 1 220px;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.chart-input,
+.chart-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.chart-actions {
+  margin-left: auto;
+}
+
+@media (max-width: 720px) {
+  .chart-filter {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .chart-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
 .chart-canvas {
   height: 320px;
 }

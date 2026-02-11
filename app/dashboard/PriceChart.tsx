@@ -268,21 +268,22 @@ export default function PriceChart({
               alignItems: "flex-end",
             }}
           >
-          <div>
+          <div className="chart-filter">
             <label htmlFor="product-search">Search products</label>
             <input
               id="product-search"
+              className="chart-input"
               type="search"
               value={productQuery}
               onChange={(event) => setProductQuery(event.target.value)}
               placeholder={productLabel}
-              style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)" }}
             />
           </div>
-          <div>
+          <div className="chart-filter">
             <label htmlFor="product-select">{productLabel}</label>
             <select
               id="product-select"
+              className="chart-select"
               value={product.key}
               onChange={(event) => {
                 const selected = productOptions.find(
@@ -293,7 +294,6 @@ export default function PriceChart({
                   setStoreFilter("all");
                 }
               }}
-              style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)" }}
             >
               {filteredProductOptions.map((item) => (
                 <option key={item.key} value={item.key}>
@@ -302,13 +302,13 @@ export default function PriceChart({
               ))}
             </select>
           </div>
-          <div>
+          <div className="chart-filter">
             <label htmlFor="store-select">{storeLabel}</label>
             <select
               id="store-select"
+              className="chart-select"
               value={storeFilter}
               onChange={(event) => setStoreFilter(event.target.value)}
-              style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid var(--line)" }}
             >
               {storeOptions.map((store) => (
                 <option key={store} value={store}>
@@ -317,7 +317,7 @@ export default function PriceChart({
               ))}
             </select>
           </div>
-          <div style={{ marginLeft: "auto" }}>
+          <div className="chart-actions">
             <button
               type="button"
               className="button ghost"
