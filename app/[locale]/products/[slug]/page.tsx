@@ -87,6 +87,53 @@ export default async function ProductPage({ params }: PageProps) {
         })
       : null;
 
+  const priceSnapshots = product.productId
+    ? await prisma.price.findMany({
+        where: { productId: product.productId },
+        include: { store: true },
+        orderBy: [{ recordedAt: "desc" }, { id: "desc" }],
+      })
+    : [];
+
+  const currencyFormatter = new Intl.NumberFormat(normalizedLocale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const dateFormatter = new Intl.DateTimeFormat(normalizedLocale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const rangeLabel = normalizedLocale === "bg" ? "Среден диапазон" : "Avg range";
+  const updatedLabel = normalizedLocale === "bg" ? "Обновено" : "Updated";
+
+  let minPrice = Number.POSITIVE_INFINITY;
+  let maxPrice = Number.NEGATIVE_INFINITY;
+  let totalPrice = 0;
+  const storeLatest = new Map<string, (typeof priceSnapshots)[number]>();
+
+  priceSnapshots.forEach((price) => {
+    minPrice = Math.min(minPrice, price.amount);
+    maxPrice = Math.max(maxPrice, price.amount);
+    totalPrice += price.amount;
+    if (!storeLatest.has(price.storeId)) {
+      storeLatest.set(price.storeId, price);
+    }
+  });
+
+  const bestPrice = Number.isFinite(minPrice) ? minPrice : null;
+  const avgPrice = priceSnapshots.length ? totalPrice / priceSnapshots.length : null;
+  const lastUpdate = priceSnapshots[0]?.recordedAt ?? null;
+  const priceNote =
+    bestPrice !== null && Number.isFinite(maxPrice)
+      ? `${rangeLabel}: ${currencyFormatter.format(bestPrice)} - ${currencyFormatter.format(
+          maxPrice
+        )} EUR`
+      : product.priceNote;
+  const lastChecked = lastUpdate
+    ? `${updatedLabel} ${dateFormatter.format(lastUpdate)}`
+    : product.lastChecked;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -95,8 +142,8 @@ export default async function ProductPage({ params }: PageProps) {
     offers: {
       "@type": "AggregateOffer",
       priceCurrency: "EUR",
-      lowPrice: "9.00",
-      highPrice: "24.00",
+      lowPrice: bestPrice !== null ? bestPrice.toFixed(2) : "9.00",
+      highPrice: Number.isFinite(maxPrice) ? maxPrice.toFixed(2) : "24.00",
     },
   };
 
@@ -122,8 +169,8 @@ export default async function ProductPage({ params }: PageProps) {
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
             <div className="card">
               <h3>{dict.product.snapshot}</h3>
-              <p>{product.priceNote}</p>
-              <p>{product.lastChecked}</p>
+              <p>{priceNote}</p>
+              <p>{lastChecked}</p>
             </div>
             <div className="card">
               <h3>{dict.product.track}</h3>
@@ -138,19 +185,23 @@ export default async function ProductPage({ params }: PageProps) {
               <div className="stats-grid">
                 <div>
                   <span className="stat-label">Best price</span>
-                  <strong>9.40 EUR</strong>
+                  <strong>
+                    {bestPrice !== null ? `${currencyFormatter.format(bestPrice)} EUR` : "—"}
+                  </strong>
                 </div>
                 <div>
                   <span className="stat-label">Avg price</span>
-                  <strong>14.80 EUR</strong>
+                  <strong>
+                    {avgPrice !== null ? `${currencyFormatter.format(avgPrice)} EUR` : "—"}
+                  </strong>
                 </div>
                 <div>
                   <span className="stat-label">Stores tracked</span>
-                  <strong>6</strong>
+                  <strong>{storeLatest.size || "—"}</strong>
                 </div>
                 <div>
                   <span className="stat-label">Last update</span>
-                  <strong>Today</strong>
+                  <strong>{lastUpdate ? dateFormatter.format(lastUpdate) : "—"}</strong>
                 </div>
               </div>
             </div>
@@ -193,24 +244,20 @@ export default async function ProductPage({ params }: PageProps) {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Fresh Mart</td>
-                  <td>1L bottle</td>
-                  <td>9.40 EUR</td>
-                  <td>2h ago</td>
-                </tr>
-                <tr>
-                  <td>Market One</td>
-                  <td>1L bottle</td>
-                  <td>10.10 EUR</td>
-                  <td>Yesterday</td>
-                </tr>
-                <tr>
-                  <td>SuperBox</td>
-                  <td>750ml bottle</td>
-                  <td>8.90 EUR</td>
-                  <td>3 days ago</td>
-                </tr>
+                {storeLatest.size ? (
+                  Array.from(storeLatest.values()).map((price) => (
+                    <tr key={price.id}>
+                      <td>{price.store.name}</td>
+                      <td>—</td>
+                      <td>{currencyFormatter.format(price.amount)} EUR</td>
+                      <td>{dateFormatter.format(price.recordedAt)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4}>No prices yet.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

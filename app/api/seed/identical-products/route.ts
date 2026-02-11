@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { promises as fs } from "node:fs";
+import { createReadStream } from "node:fs";
 import path from "node:path";
+import readline from "node:readline";
 
 const REQUIRED_HEADERS = {
   city: "Населено място",
@@ -71,13 +73,6 @@ function parseCsvLine(line: string) {
   return values.map((value) => value.trim());
 }
 
-function parseCsv(content: string) {
-  return content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map(parseCsvLine);
-}
 
 function normalizeCode(value: string) {
   return value
@@ -148,6 +143,69 @@ async function listCsvFiles(root: string) {
   return files;
 }
 
+async function processCsvFile(
+  filePath: string,
+  products: Map<string, ProductBucket>
+) {
+  const stream = createReadStream(filePath, { encoding: "utf-8" });
+  const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+  let headers: string[] | null = null;
+  let hasRequiredHeaders = false;
+  const recordedAt = extractRecordedAt(filePath);
+  const source = path.basename(filePath, path.extname(filePath));
+
+  try {
+    for await (const line of reader) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        continue;
+      }
+
+      const values = parseCsvLine(trimmed);
+      if (!headers) {
+        const missingHeaders = Object.values(REQUIRED_HEADERS).filter(
+          (header) => !values.includes(header)
+        );
+        if (missingHeaders.length) {
+          return;
+        }
+        headers = values;
+        hasRequiredHeaders = true;
+        continue;
+      }
+
+      if (!hasRequiredHeaders) {
+        return;
+      }
+
+      const row = toCsvRow(headers, values);
+      if (!row?.productName || !row.store) {
+        continue;
+      }
+
+      const priceValue = parsePrice(row.promoPrice || row.retailPrice);
+      if (priceValue === null || priceValue <= 0) {
+        continue;
+      }
+
+      const bucket = bucketFor(products, row.productName);
+      if (!bucket) {
+        continue;
+      }
+
+      bucket.sources.add(source);
+      const rowKey = buildRowKey(row, recordedAt);
+      if (!bucket.rows.has(rowKey)) {
+        bucket.rows.set(rowKey, { row, price: priceValue, recordedAt, source });
+      }
+    }
+  } finally {
+    reader.close();
+    stream.destroy();
+  }
+}
+
 function bucketFor(products: Map<string, ProductBucket>, name: string) {
   const normalized = normalizeName(name);
   if (!normalized) {
@@ -216,47 +274,7 @@ export async function POST(request: Request) {
   const products = new Map<string, ProductBucket>();
 
   for (const filePath of csvFiles) {
-    const content = await fs.readFile(filePath, "utf-8");
-    const rows = parseCsv(content);
-
-    if (rows.length < 2) {
-      continue;
-    }
-
-    const headers = rows[0];
-    const missingHeaders = Object.values(REQUIRED_HEADERS).filter(
-      (header) => !headers.includes(header)
-    );
-
-    if (missingHeaders.length) {
-      continue;
-    }
-
-    const recordedAt = extractRecordedAt(filePath);
-    const source = path.basename(filePath, path.extname(filePath));
-
-    for (const rawRow of rows.slice(1)) {
-      const row = toCsvRow(headers, rawRow);
-      if (!row?.productName || !row.store) {
-        continue;
-      }
-
-      const priceValue = parsePrice(row.promoPrice || row.retailPrice);
-      if (priceValue === null || priceValue <= 0) {
-        continue;
-      }
-
-      const bucket = bucketFor(products, row.productName);
-      if (!bucket) {
-        continue;
-      }
-
-      bucket.sources.add(source);
-      const rowKey = buildRowKey(row, recordedAt);
-      if (!bucket.rows.has(rowKey)) {
-        bucket.rows.set(rowKey, { row, price: priceValue, recordedAt, source });
-      }
-    }
+    await processCsvFile(filePath, products);
   }
 
   const candidates = Array.from(products.values())
