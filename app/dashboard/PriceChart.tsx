@@ -133,6 +133,7 @@ export default function PriceChart({
   const [storeFilter, setStoreFilter] = useState("all");
   const [seriesOverride, setSeriesOverride] = useState<StoreSeries[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const preferred = productOptions.find((item) => item.source === "db");
@@ -252,10 +253,21 @@ export default function PriceChart({
     return `${numeric.toFixed(2)} ${currencyLabel}`;
   };
 
+  const fullscreenLabel = isFullscreen ? "Exit full screen" : "Full screen";
+
   return (
     <section className="section">
-      <div className="card">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 16 }}>
+      <div className={isFullscreen ? "chart-shell chart-shell--fullscreen" : "chart-shell"}>
+        <div className="card chart-card">
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 16,
+              marginBottom: 16,
+              alignItems: "flex-end",
+            }}
+          >
           <div>
             <label htmlFor="product-search">Search products</label>
             <input
@@ -305,29 +317,42 @@ export default function PriceChart({
               ))}
             </select>
           </div>
+          <div style={{ marginLeft: "auto" }}>
+            <button
+              type="button"
+              className="button ghost"
+              onClick={() => setIsFullscreen((current) => !current)}
+            >
+              {fullscreenLabel}
+            </button>
+          </div>
         </div>
         {loading ? (
           <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>{loadingLabel}</p>
         ) : activeSeries.length === 0 ? (
           <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>{emptyStateLabel}</p>
         ) : (
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: { position: "top" },
-              },
-              scales: {
-                y: {
-                  ticks: {
-                    callback: (value) => formatTickValue(value),
+          <div className="chart-canvas">
+            <Line
+              data={chartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { position: "top" },
+                },
+                scales: {
+                  y: {
+                    ticks: {
+                      callback: (value) => formatTickValue(value),
+                    },
                   },
                 },
-              },
-            }}
-          />
+              }}
+            />
+          </div>
         )}
+      </div>
       </div>
     </section>
   );

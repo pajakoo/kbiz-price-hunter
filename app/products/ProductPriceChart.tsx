@@ -22,6 +22,7 @@ type Props = {
 
 export default function ProductPriceChart({ slug, currencyLabel }: Props) {
   const [series, setSeries] = useState<StoreSeries[]>(() => getProductHistory(slug));
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -72,22 +73,38 @@ export default function ProductPriceChart({ slug, currencyLabel }: Props) {
     return { labels, datasets };
   }, [series]);
 
+  const fullscreenLabel = isFullscreen ? "Exit full screen" : "Full screen";
+
   return (
-    <Line
-      data={chartData}
-      options={{
-        responsive: true,
-        plugins: {
-          legend: { position: "top" },
-        },
-        scales: {
-          y: {
-            ticks: {
-              callback: (value) => `${value} ${currencyLabel}`,
+    <div className={isFullscreen ? "chart-shell chart-shell--fullscreen" : "chart-shell"}>
+      <div className="chart-toolbar">
+        <button
+          type="button"
+          className="button ghost"
+          onClick={() => setIsFullscreen((current) => !current)}
+        >
+          {fullscreenLabel}
+        </button>
+      </div>
+      <div className="chart-canvas">
+        <Line
+          data={chartData}
+          options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "top" },
             },
-          },
-        },
-      }}
-    />
+            scales: {
+              y: {
+                ticks: {
+                  callback: (value) => `${value} ${currencyLabel}`,
+                },
+              },
+            },
+          }}
+        />
+      </div>
+    </div>
   );
 }
