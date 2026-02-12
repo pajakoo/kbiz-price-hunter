@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getLocalizedProduct, products } from "@/lib/products";
+import ProductList from "@/app/products/ProductList";
 import { getDictionary, type Locale } from "@/lib/i18n";
 
 export const metadata = {
@@ -28,30 +27,62 @@ export default async function ProductsPage({
   const dict = getDictionary(normalizedLocale);
   const basePath = `/${normalizedLocale}`;
 
-  const staticProducts: ProductCard[] = products.map((product) => {
-    const localized = getLocalizedProduct(product, normalizedLocale);
-    return {
-      slug: localized.slug,
-      name: localized.name,
-      summary: localized.summary,
-      priceNote: localized.priceNote,
-      lastChecked: localized.lastChecked,
-    };
-  });
 
   const dbProducts = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
   });
 
-  const dbCards: ProductCard[] = dbProducts.map((product) => ({
-    slug: product.slug,
-    name: product.name,
-    summary: product.description?.trim() || dict.products.fallbackSummary,
-    priceNote: dict.products.fallbackPriceNote,
-    lastChecked: dict.products.fallbackLastChecked,
-  }));
+  const currencyFormatter = new Intl.NumberFormat(normalizedLocale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const dateFormatter = new Intl.DateTimeFormat(normalizedLocale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const rangeLabel = normalizedLocale === "bg" ? "Среден диапазон" : "Avg range";
+  const updatedLabel = normalizedLocale === "bg" ? "Обновено" : "Updated";
 
-  const mergedProducts = [...dbCards, ...staticProducts].filter((product, index, all) => {
+  const dbProductIds = dbProducts.map((product) => product.id);
+  const priceAggregates = dbProductIds.length
+    ? await prisma.price.groupBy({
+        by: ["productId"],
+        where: { productId: { in: dbProductIds } },
+        _min: { amount: true },
+        _max: { amount: true, recordedAt: true },
+      })
+    : [];
+
+  const priceStats = new Map(
+    priceAggregates.map((aggregate) => [aggregate.productId, aggregate])
+  );
+
+  const dbCards: ProductCard[] = dbProducts.map((product) => {
+    const stats = priceStats.get(product.id);
+    const minAmount = stats?._min?.amount ?? null;
+    const maxAmount = stats?._max?.amount ?? null;
+    const recordedAt = stats?._max?.recordedAt ?? null;
+    const priceNote =
+      minAmount !== null && maxAmount !== null
+        ? `${rangeLabel}: ${currencyFormatter.format(minAmount)} - ${currencyFormatter.format(
+            maxAmount
+          )} EUR`
+        : dict.products.fallbackPriceNote;
+    const lastChecked = recordedAt
+      ? `${updatedLabel} ${dateFormatter.format(recordedAt)}`
+      : dict.products.fallbackLastChecked;
+
+    return {
+      slug: product.slug,
+      name: product.name,
+      summary: product.description?.trim() || dict.products.fallbackSummary,
+      priceNote,
+      lastChecked,
+    };
+  });
+
+  const mergedProducts = dbCards.filter((product, index, all) => {
     return all.findIndex((item) => item.slug === product.slug) === index;
   });
 
@@ -62,20 +93,7 @@ export default async function ProductsPage({
         <p className="pill" style={{ marginTop: 12 }}>
           {dict.products.subtitle}
         </p>
-        <div className="section product-grid">
-          {mergedProducts.map((product) => (
-            <Link
-              key={product.slug}
-              href={`${basePath}/products/${product.slug}`}
-              className="product-card"
-            >
-              <h3>{product.name}</h3>
-              <p>{product.summary}</p>
-              {product.priceNote ? <span>{product.priceNote}</span> : null}
-              {product.lastChecked ? <span>{product.lastChecked}</span> : null}
-            </Link>
-          ))}
-        </div>
+        <ProductList basePath={basePath} products={mergedProducts} />
       </div>
     </main>
   );

@@ -346,6 +346,48 @@ html[data-theme="dark"] .pill {
   }
 }
 
+.category-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.filter-chip {
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--ink-muted);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-chip--active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.filter-chip--clear {
+  margin-left: auto;
+}
+
+.filter-chip--disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+html[data-theme="dark"] .filter-chip {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+}
+
+html[data-theme="dark"] .filter-chip--active {
+  background: rgba(143, 176, 255, 0.18);
+  color: var(--accent);
+}
+
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

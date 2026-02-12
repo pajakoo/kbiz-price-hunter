@@ -17,10 +17,14 @@ export default async function LocaleLayout({
   const dict = getDictionary(normalizedLocale);
   const basePath = `/${normalizedLocale}`;
   const session = await getSession();
-  const alertCount = session
-    ? await prisma.priceAlertNotification.count({ where: { userId: session.user.id } })
-    : 0;
+  const [productCount, alertCount] = await Promise.all([
+    prisma.product.count(),
+    session
+      ? prisma.priceAlertNotification.count({ where: { userId: session.user.id } })
+      : Promise.resolve(0),
+  ]);
   const alertLabel = alertCount > 9 ? "9+" : String(alertCount);
+  const productLabel = productCount > 99 ? "99+" : String(productCount);
 
   return (
     <>
@@ -30,7 +34,10 @@ export default async function LocaleLayout({
             Kbiz Price Hunter
           </Link>
           <nav className="nav-links">
-            <Link href={`${basePath}/products`}>{dict.nav.products}</Link>
+            <Link href={`${basePath}/products`} className="nav-alert">
+              {dict.nav.products}
+              {productCount > 0 ? <span className="nav-badge">{productLabel}</span> : null}
+            </Link>
             <Link href={`${basePath}/dashboard`} className="nav-alert">
               {dict.nav.dashboard}
               {alertCount > 0 ? <span className="nav-badge">{alertLabel}</span> : null}
