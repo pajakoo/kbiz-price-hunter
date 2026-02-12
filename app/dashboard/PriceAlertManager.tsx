@@ -159,25 +159,30 @@ export default function PriceAlertManager({
         <h2>{title}</h2>
         <p style={{ marginTop: 8, color: "var(--ink-muted)" }}>{body}</p>
         <form className="form-shell" onSubmit={handleSubmit} style={{ marginTop: 20 }}>
-          <label htmlFor="alert-product-search">Search products</label>
-          <input
-            id="alert-product-search"
-            type="search"
-            value={productQuery}
-            onChange={(event) => setProductQuery(event.target.value)}
-            placeholder={productLabel}
-          />
-          <label htmlFor="alert-product">{productLabel}</label>
-          <select id="alert-product" name="productId" defaultValue="" required>
-            <option value="" disabled>
-              --
-            </option>
-            {filteredProducts.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
+          <div className="chart-filter" style={{ maxWidth: "100%" }}>
+            <label htmlFor="alert-product-search">Search products</label>
+            <input
+              id="alert-product-search"
+              type="search"
+              value={productQuery}
+              onChange={(event) => setProductQuery(event.target.value)}
+              placeholder={productLabel}
+              className="chart-input"
+            />
+          </div>
+          <div className="chart-filter" style={{ maxWidth: "100%" }}>
+            <label htmlFor="alert-product">{productLabel}</label>
+            <select id="alert-product" name="productId" defaultValue="" required className="chart-select">
+              <option value="" disabled>
+                --
               </option>
-            ))}
-          </select>
+              {filteredProducts.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             className="button"
             type="submit"

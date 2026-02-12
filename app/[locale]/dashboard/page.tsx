@@ -281,7 +281,9 @@ export default async function DashboardPage({
         <PriceChart
           productLabel={dict.chart.product}
           storeLabel={dict.chart.store}
+          cityLabel={dict.chart.city}
           allStoresLabel={dict.chart.allStores}
+          allCitiesLabel={dict.chart.allCities}
           currencyLabel="EUR"
           emptyStateLabel={dict.chart.empty}
           loadingLabel={dict.chart.loading}

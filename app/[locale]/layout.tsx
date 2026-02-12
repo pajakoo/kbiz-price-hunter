@@ -24,7 +24,7 @@ export default async function LocaleLayout({
       : Promise.resolve(0),
   ]);
   const alertLabel = alertCount > 9 ? "9+" : String(alertCount);
-  const productLabel = productCount > 99 ? "99+" : String(productCount);
+  const productLabel = String(productCount);
 
   return (
     <>
@@ -56,6 +56,9 @@ export default async function LocaleLayout({
           <div>
             <h3>{dict.footer.title}</h3>
             <p>{dict.footer.body}</p>
+            <p style={{ marginTop: 8, color: "var(--ink-muted)" }}>
+              Products tracked: {productCount}
+            </p>
           </div>
           <div className="footer-links">
             <Link href={`${basePath}/products`}>{dict.footer.browse}</Link>

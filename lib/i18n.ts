@@ -105,7 +105,9 @@ type Dictionary = {
   chart: {
     product: string;
     store: string;
+    city: string;
     allStores: string;
+    allCities: string;
     empty: string;
     loading: string;
   };
@@ -256,7 +258,9 @@ const dictionary: Record<Locale, Dictionary> = {
     chart: {
       product: "Product",
       store: "Store",
+      city: "City",
       allStores: "All stores",
+      allCities: "All cities",
       empty: "No price history yet.",
       loading: "Loading price history...",
     },
@@ -403,7 +407,9 @@ const dictionary: Record<Locale, Dictionary> = {
     chart: {
       product: "Продукт",
       store: "Магазин",
+      city: "Град",
       allStores: "Всички магазини",
+      allCities: "Всички градове",
       empty: "Все още няма история на цените.",
       loading: "Зареждане на история на цените...",
     },

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getProductCategories } from "@/lib/product-categories";
+import { normalizeCity } from "@/lib/city-normalize";
+import { normalizeProductName } from "@/lib/product-normalize";
 import { promises as fs } from "node:fs";
 import { createReadStream } from "node:fs";
 import path from "node:path";
@@ -189,15 +192,19 @@ async function processCsvFile(
         continue;
       }
 
-      const bucket = bucketFor(products, row.productName);
+      const normalizedName = normalizeProductName(row.productName);
+      const normalizedCity = normalizeCity(row.city, row.store);
+      const normalizedRow = { ...row, productName: normalizedName, city: normalizedCity ?? "" };
+
+      const bucket = bucketFor(products, normalizedName);
       if (!bucket) {
         continue;
       }
 
       bucket.sources.add(source);
-      const rowKey = buildRowKey(row, recordedAt);
+      const rowKey = buildRowKey(normalizedRow, recordedAt);
       if (!bucket.rows.has(rowKey)) {
-        bucket.rows.set(rowKey, { row, price: priceValue, recordedAt, source });
+        bucket.rows.set(rowKey, { row: normalizedRow, price: priceValue, recordedAt, source });
       }
     }
   } finally {
@@ -236,6 +243,11 @@ export async function POST(request: Request) {
   const { searchParams } = new URL(request.url);
   const rootParam = searchParams.get("root")?.trim();
   const limitParam = Number.parseInt(searchParams.get("limit") ?? "", 10);
+  const categoriesParam = searchParams.get("categories") ?? searchParams.get("category") ?? "";
+  const selectedCategories = categoriesParam
+    .split(",")
+    .map((category) => category.trim())
+    .filter(Boolean);
   const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 500) : 20;
   const baseRoot = process.cwd();
   const rootParts = rootParam ? rootParam.split(",").map((part) => part.trim()) : ["data"];
@@ -279,6 +291,13 @@ export async function POST(request: Request) {
 
   const candidates = Array.from(products.values())
     .filter((bucket) => bucket.sources.size >= 2)
+    .filter((bucket) => {
+      if (!selectedCategories.length) {
+        return true;
+      }
+      const bucketCategories = getProductCategories(bucket.name, bucket.name);
+      return selectedCategories.every((category) => bucketCategories.includes(category));
+    })
     .sort((a, b) => {
       if (a.sources.size !== b.sources.size) {
         return b.sources.size - a.sources.size;
@@ -294,18 +313,22 @@ export async function POST(request: Request) {
   const storeCache = new Map<string, { id: string }>();
 
   for (const bucket of candidates) {
-    const slug = buildSlug(bucket.name);
+    const normalizedName = normalizeProductName(bucket.name);
+    const slug = buildSlug(normalizedName);
     const existingProduct = await prisma.product.findUnique({ where: { slug } });
+    const categories = getProductCategories(normalizedName, normalizedName);
     const product = await prisma.product.upsert({
       where: { slug },
       update: {
-        name: bucket.name,
-        description: bucket.name,
+        name: normalizedName,
+        description: normalizedName,
+        categories,
       },
       create: {
         slug,
-        name: bucket.name,
-        description: bucket.name,
+        name: normalizedName,
+        description: normalizedName,
+        categories,
       },
     });
 
@@ -357,6 +380,7 @@ export async function POST(request: Request) {
           amount: sourceRow.price,
           currency: "EUR",
           recordedAt: sourceRow.recordedAt,
+          source: sourceRow.source,
         },
       });
 
@@ -377,6 +401,7 @@ export async function POST(request: Request) {
         name: bucket.name,
         sources: bucket.sources.size,
         dates: dateKeys.size,
+        categories: getProductCategories(bucket.name, bucket.name),
       };
     }),
   });

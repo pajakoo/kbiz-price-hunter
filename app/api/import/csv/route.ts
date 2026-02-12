@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { handlePriceDropAlert } from "@/lib/price-alerts";
+import { getProductCategories } from "@/lib/product-categories";
+import { normalizeCity } from "@/lib/city-normalize";
+import { normalizeProductName } from "@/lib/product-normalize";
 
 const REQUIRED_HEADERS = {
   city: "Населено място",
@@ -126,6 +129,7 @@ export async function POST(request: Request) {
 
   const content = await file.text();
   const rows = parseCsv(content);
+  const source = file.name.trim() || null;
 
   if (rows.length < 2) {
     return NextResponse.json({ ok: false, error: "CSV file has no rows." }, { status: 400 });
@@ -162,12 +166,13 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const storeKey = `${row.store.trim()}|${row.city.trim()}`;
+    const normalizedCity = normalizeCity(row.city, row.store);
+    const storeKey = `${row.store.trim()}|${normalizedCity ?? ""}`;
     let store = storeCache.get(storeKey);
 
     if (!store) {
       const existingStore = await prisma.store.findFirst({
-        where: { name: row.store.trim(), city: row.city.trim() || null },
+        where: { name: row.store.trim(), city: normalizedCity },
       });
 
       const createdStore =
@@ -175,7 +180,7 @@ export async function POST(request: Request) {
         (await prisma.store.create({
           data: {
             name: row.store.trim(),
-            city: row.city.trim() || null,
+            city: normalizedCity,
           },
         }));
 
@@ -187,24 +192,29 @@ export async function POST(request: Request) {
       }
     }
 
-    const slug = buildSlug(row.productCode, row.productName);
+    const normalizedName = normalizeProductName(row.productName);
+    const slug = buildSlug(row.productCode, normalizedName);
     let product = productCache.get(slug);
 
     if (!product) {
       const existingProduct = await prisma.product.findUnique({ where: { slug } });
+      const description = normalizedName;
+      const categories = getProductCategories(normalizedName, description);
       const upsertedProduct = existingProduct
         ? await prisma.product.update({
             where: { slug },
             data: {
-              name: row.productName.trim(),
-              description: row.productName.trim(),
+              name: normalizedName,
+              description,
+              categories,
             },
           })
         : await prisma.product.create({
             data: {
               slug,
-              name: row.productName.trim(),
-              description: row.productName.trim(),
+              name: normalizedName,
+              description,
+              categories,
             },
           });
 
@@ -227,8 +237,14 @@ export async function POST(request: Request) {
         amount: priceValue,
         currency: "EUR",
         recordedAt,
+        source,
+      },
+      include: {
+        product: true,
+        store: true,
       },
     });
+
 
     await handlePriceDropAlert({
       product: { id: product.id, name: product.name, slug: product.slug },

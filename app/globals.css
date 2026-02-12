@@ -353,6 +353,15 @@ html[data-theme="dark"] .pill {
   margin-top: 20px;
 }
 
+.product-search {
+  margin-top: 16px;
+  max-width: 420px;
+}
+
+.product-search input {
+  margin-bottom: 0;
+}
+
 .filter-chip {
   border: 1px solid var(--line);
   background: white;

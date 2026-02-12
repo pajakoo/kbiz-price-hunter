@@ -20,6 +20,10 @@ private behind magic-link auth (to be wired next).
 - Added fallback copy for database products and chart empty states.
 - Added an eMAG seed endpoint that inserts 10 monitor products with prices.
 
+## Data maintenance
+- Backfill product categories (login required): `POST /api/seed/categories`.
+- Normalize store cities from store names (login required): `POST /api/seed/cities`.
+
 ## Getting started
 ```bash
 npm install

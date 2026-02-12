@@ -23,6 +23,7 @@ type Props = {
 export default function ProductPriceChart({ slug, currencyLabel }: Props) {
   const [series, setSeries] = useState<StoreSeries[]>(() => getProductHistory(slug));
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -51,6 +52,24 @@ export default function ProductPriceChart({ slug, currencyLabel }: Props) {
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const media = window.matchMedia("(max-width: 720px)");
+    const update = () => setIsCompact(media.matches);
+    update();
+
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
+
   const chartData = useMemo(() => {
     const labels = Array.from(
       new Set(series.flatMap((item) => item.points.map((point) => point.date)))
@@ -73,6 +92,18 @@ export default function ProductPriceChart({ slug, currencyLabel }: Props) {
     return { labels, datasets };
   }, [series]);
 
+  const formatTickValue = (value: number | string) => {
+    const numeric = typeof value === "string" ? Number(value) : value;
+    if (!Number.isFinite(numeric)) {
+      return `${value} ${currencyLabel}`;
+    }
+    return `${numeric.toFixed(2)} ${currencyLabel}`;
+  };
+
+  const legendLabelMax = 28;
+  const formatLegendLabel = (label: string) =>
+    label.length > legendLabelMax ? `${label.slice(0, legendLabelMax - 1)}…` : label;
+
   const fullscreenLabel = isFullscreen ? "Exit full screen" : "Full screen";
 
   return (
@@ -93,12 +124,26 @@ export default function ProductPriceChart({ slug, currencyLabel }: Props) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { position: "top" },
+              legend: {
+                position: "bottom",
+                display: !isCompact,
+                labels: {
+                  boxWidth: 12,
+                  padding: 12,
+                  generateLabels: (chart) =>
+                    ChartJS.defaults.plugins.legend.labels
+                      .generateLabels(chart)
+                      .map((label) => ({
+                        ...label,
+                        text: formatLegendLabel(label.text),
+                      })),
+                },
+              },
             },
             scales: {
               y: {
                 ticks: {
-                  callback: (value) => `${value} ${currencyLabel}`,
+                  callback: (value) => formatTickValue(value),
                 },
               },
             },

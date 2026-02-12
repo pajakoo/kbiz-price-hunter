@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getProductCategories } from "@/lib/product-categories";
+import { normalizeProductName } from "@/lib/product-normalize";
 
 const EMAG_MONITORS = [
   {
@@ -85,16 +87,20 @@ export async function POST() {
 
   for (const [index, item] of EMAG_MONITORS.entries()) {
     const slug = buildSlug(index);
+    const normalizedName = normalizeProductName(item.name);
+    const categories = getProductCategories(normalizedName, normalizedName);
     const product = await prisma.product.upsert({
       where: { slug },
       update: {
-        name: item.name,
-        description: item.name,
+        name: normalizedName,
+        description: normalizedName,
+        categories,
       },
       create: {
         slug,
-        name: item.name,
-        description: item.name,
+        name: normalizedName,
+        description: normalizedName,
+        categories,
       },
     });
 
@@ -117,6 +123,7 @@ export async function POST() {
         amount: point.amount,
         currency: "EUR",
         recordedAt: point.recordedAt,
+        source: "emag",
       })),
     });
 

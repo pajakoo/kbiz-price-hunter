@@ -21,6 +21,8 @@ type PricePoint = {
 
 type StoreSeries = {
   store: string;
+  city?: string | null;
+  source?: string | null;
   points: PricePoint[];
 };
 
@@ -90,7 +92,9 @@ const SAMPLE_HISTORY: ChartProduct[] = [
 type Props = {
   productLabel: string;
   storeLabel: string;
+  cityLabel: string;
   allStoresLabel: string;
+  allCitiesLabel: string;
   currencyLabel: string;
   emptyStateLabel: string;
   loadingLabel: string;
@@ -100,15 +104,18 @@ type Props = {
 export default function PriceChart({
   productLabel,
   storeLabel,
+  cityLabel,
   allStoresLabel,
+  allCitiesLabel,
   currencyLabel,
   emptyStateLabel,
   loadingLabel,
-  extraProducts = [],
+  extraProducts,
 }: Props) {
+
   const productOptions = useMemo(() => {
     const existing = new Set(SAMPLE_HISTORY.map((item) => item.key));
-    const extras = extraProducts
+    const extras = (extraProducts ?? [])
       .filter((item) => item?.name && item?.slug)
       .map((item) => ({
         key: item.slug,
@@ -130,10 +137,12 @@ export default function PriceChart({
   const [product, setProduct] = useState(initialProduct);
   const preferredSet = useRef(false);
   const [productQuery, setProductQuery] = useState("");
+  const [cityFilter, setCityFilter] = useState("all");
   const [storeFilter, setStoreFilter] = useState("all");
   const [seriesOverride, setSeriesOverride] = useState<StoreSeries[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
 
   useEffect(() => {
     const preferred = productOptions.find((item) => item.source === "db");
@@ -152,6 +161,28 @@ export default function PriceChart({
       setLoading(false);
     }
   }, [productOptions, product.key]);
+
+  useEffect(() => {
+    setStoreFilter("all");
+  }, [cityFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const media = window.matchMedia("(max-width: 720px)");
+    const update = () => setIsCompact(media.matches);
+    update();
+
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
 
   useEffect(() => {
     if (product.source !== "db" || !product.slug) {
@@ -188,6 +219,20 @@ export default function PriceChart({
 
   const activeSeries = product.source === "db" ? seriesOverride ?? [] : product.series;
 
+  const formatSourceLabel = (source?: string | null) => {
+    if (!source) {
+      return "";
+    }
+    const withoutExtension = source.replace(/\.[^.]+$/, "");
+    const withoutNumericSuffix = withoutExtension.replace(/_\d+$/, "");
+    return withoutNumericSuffix.replace(/_/g, " ").replace(/\s+/g, " ").trim();
+  };
+
+  const formatStoreLabel = (series: StoreSeries) => {
+    const sourceLabel = formatSourceLabel(series.source);
+    return sourceLabel ? `${series.store} (${sourceLabel})` : series.store;
+  };
+
   const uniqueSeries = useMemo(() => {
     const seen = new Set<string>();
     return activeSeries.filter((series) => {
@@ -200,11 +245,29 @@ export default function PriceChart({
     });
   }, [activeSeries]);
 
+  const cityOptions = useMemo(() => {
+    const cities = new Set<string>();
+    uniqueSeries.forEach((series) => {
+      const city = series.city?.trim();
+      if (city) {
+        cities.add(city);
+      }
+    });
+    return ["all", ...Array.from(cities)];
+  }, [uniqueSeries]);
+
+  const cityFilteredSeries = useMemo(() => {
+    if (cityFilter === "all") {
+      return uniqueSeries;
+    }
+    return uniqueSeries.filter((series) => (series.city ?? "") === cityFilter);
+  }, [uniqueSeries, cityFilter]);
+
   const storeOptions = useMemo(() => {
     const stores = new Set<string>();
-    uniqueSeries.forEach((series) => stores.add(series.store));
+    cityFilteredSeries.forEach((series) => stores.add(formatStoreLabel(series)));
     return ["all", ...Array.from(stores)];
-  }, [uniqueSeries]);
+  }, [cityFilteredSeries]);
 
   const filteredProductOptions = useMemo(() => {
     const query = productQuery.trim().toLowerCase();
@@ -223,15 +286,15 @@ export default function PriceChart({
   const chartData = useMemo(() => {
     const filteredSeries =
       storeFilter === "all"
-        ? uniqueSeries
-        : uniqueSeries.filter((series) => series.store === storeFilter);
+        ? cityFilteredSeries
+        : cityFilteredSeries.filter((series) => formatStoreLabel(series) === storeFilter);
 
     const labels = Array.from(
       new Set(filteredSeries.flatMap((series) => series.points.map((point) => point.date)))
     ).sort();
 
     const datasets = filteredSeries.map((series, index) => ({
-      label: series.store,
+      label: formatStoreLabel(series),
       data: labels.map((label) => {
         const point = series.points.find((p) => p.date === label);
         return point ? point.price : null;
@@ -243,7 +306,7 @@ export default function PriceChart({
     }));
 
     return { labels, datasets };
-  }, [uniqueSeries, storeFilter]);
+  }, [cityFilteredSeries, storeFilter]);
 
   const formatTickValue = (value: number | string) => {
     const numeric = typeof value === "string" ? Number(value) : value;
@@ -252,6 +315,10 @@ export default function PriceChart({
     }
     return `${numeric.toFixed(2)} ${currencyLabel}`;
   };
+
+  const legendLabelMax = 28;
+  const formatLegendLabel = (label: string) =>
+    label.length > legendLabelMax ? `${label.slice(0, legendLabelMax - 1)}…` : label;
 
   const fullscreenLabel = isFullscreen ? "Exit full screen" : "Full screen";
 
@@ -303,6 +370,21 @@ export default function PriceChart({
             </select>
           </div>
           <div className="chart-filter">
+            <label htmlFor="city-select">{cityLabel}</label>
+            <select
+              id="city-select"
+              className="chart-select"
+              value={cityFilter}
+              onChange={(event) => setCityFilter(event.target.value)}
+            >
+              {cityOptions.map((city) => (
+                <option key={city} value={city}>
+                  {city === "all" ? allCitiesLabel : city}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="chart-filter">
             <label htmlFor="store-select">{storeLabel}</label>
             <select
               id="store-select"
@@ -339,7 +421,21 @@ export default function PriceChart({
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                  legend: { position: "top" },
+                  legend: {
+                    position: "bottom",
+                    display: !isCompact,
+                    labels: {
+                      boxWidth: 12,
+                      padding: 12,
+                      generateLabels: (chart) =>
+                        ChartJS.defaults.plugins.legend.labels
+                          .generateLabels(chart)
+                          .map((label) => ({
+                            ...label,
+                            text: formatLegendLabel(label.text),
+                          })),
+                    },
+                  },
                 },
                 scales: {
                   y: {

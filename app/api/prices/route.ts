@@ -29,20 +29,32 @@ export async function GET(request: Request) {
     include: { store: true },
   });
 
-  const series = prices.reduce<Record<string, { store: string; points: { date: string; price: number }[] }>>(
-    (acc, price) => {
-      const key = price.storeId;
-      if (!acc[key]) {
-        acc[key] = { store: price.store.name, points: [] };
+  const series = prices.reduce<
+    Record<
+      string,
+      {
+        store: string;
+        city: string | null;
+        source?: string | null;
+        points: { date: string; price: number }[];
       }
-      acc[key].points.push({
-        date: price.recordedAt.toISOString().slice(0, 10),
-        price: price.amount,
-      });
-      return acc;
-    },
-    {}
-  );
+    >
+  >((acc, price) => {
+    const key = price.storeId;
+    if (!acc[key]) {
+      acc[key] = {
+        store: price.store.name,
+        city: price.store.city,
+        source: price.source ?? null,
+        points: [],
+      };
+    }
+    acc[key].points.push({
+      date: price.recordedAt.toISOString().slice(0, 10),
+      price: price.amount,
+    });
+    return acc;
+  }, {});
 
   return NextResponse.json({
     ok: true,

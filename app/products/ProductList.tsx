@@ -1,89 +1,118 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import type { CategoryOption } from "@/lib/product-categories";
+import type { ProductCard } from "@/lib/product-list";
 
-type ProductCard = {
-  slug: string;
-  name: string;
-  summary: string;
-  priceNote?: string;
-  lastChecked?: string;
-};
-
-type CategoryConfig = {
-  label: string;
-  keywords: string[];
-};
-
-const CATEGORY_CONFIG: CategoryConfig[] = [
-  {
-    label: "Лекарства",
-    keywords: ["спрей", "таблетки", "капсули", "гел", "крем", "сироп", "унгв"],
-  },
-  {
-    label: "Храни",
-    keywords: ["сирене", "мляко", "месо", "хляб", "масло"],
-  },
-  {
-    label: "Напитки",
-    keywords: ["чай", "кафе", "сок", "вода"],
-  },
-  {
-    label: "Козметика",
-    keywords: ["шампоан", "лосион", "крем", "балсам"],
-  },
-  {
-    label: "Домакинство",
-    keywords: ["препарат", "почист", "прах"],
-  },
-];
-
-type CategorizedProduct = ProductCard & {
-  categories: string[];
-};
+const DEFAULT_QUERY = "";
 
 type Props = {
   basePath: string;
-  products: ProductCard[];
+  locale: "en" | "bg";
+  initialProducts: ProductCard[];
+  initialTotal: number;
+  pageSize: number;
+  categoryOptions: Array<Pick<CategoryOption, "slug" | "label">>;
+  initialQuery?: string;
+  initialCategories?: string[];
 };
 
-function getCategories(name: string) {
-  const normalized = name.toLowerCase();
-  return CATEGORY_CONFIG.filter((category) =>
-    category.keywords.some((keyword) => normalized.includes(keyword))
-  ).map((category) => category.label);
-}
+type ProductsResponse = {
+  ok: boolean;
+  products: ProductCard[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
 
-export default function ProductList({ basePath, products }: Props) {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+export default function ProductList({
+  basePath,
+  locale,
+  initialProducts,
+  initialTotal,
+  pageSize,
+  categoryOptions,
+  initialQuery = DEFAULT_QUERY,
+  initialCategories = [],
+}: Props) {
+  const [products, setProducts] = useState(initialProducts);
+  const [total, setTotal] = useState(initialTotal);
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState(initialQuery);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategories);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const categorizedProducts = useMemo<CategorizedProduct[]>(
-    () =>
-      products.map((product) => ({
-        ...product,
-        categories: getCategories(product.name),
-      })),
-    [products]
-  );
+  const hasMore = products.length < total;
 
-  const availableCategories = useMemo(() => {
-    const unique = new Set<string>();
-    categorizedProducts.forEach((product) => {
-      product.categories.forEach((category) => unique.add(category));
-    });
-    return Array.from(unique);
-  }, [categorizedProducts]);
+  const filterParams = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("pageSize", String(pageSize));
+    params.set("locale", locale);
+    if (query.trim()) {
+      params.set("q", query.trim());
+    }
+    if (selectedCategories.length) {
+      params.set("categories", selectedCategories.join(","));
+    }
+    return params;
+  }, [pageSize, locale, query, selectedCategories]);
 
-  const filteredProducts = useMemo(() => {
-    if (!selectedCategories.length) {
-      return categorizedProducts;
+  const filterKey = filterParams.toString();
+
+  const loadPage = async (nextPage: number, replace: boolean) => {
+    const params = new URLSearchParams(filterParams);
+    params.set("page", String(nextPage));
+
+    replace ? setLoading(true) : setLoadingMore(true);
+
+    try {
+      const response = await fetch(`/api/products?${params.toString()}`);
+      const payload = (await response.json()) as ProductsResponse;
+
+      if (!response.ok || !payload.ok) {
+        throw new Error("Failed to load products");
+      }
+
+      setProducts((current) => (replace ? payload.products : [...current, ...payload.products]));
+      setTotal(payload.total);
+      setPage(payload.page);
+    } catch (error) {
+      console.error("Product list load failed", error);
+      if (replace) {
+        setProducts([]);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    setPage(1);
+    loadPage(1, true);
+  }, [filterKey]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore || loadingMore) {
+      return;
     }
 
-    return categorizedProducts.filter((product) =>
-      selectedCategories.every((category) => product.categories.includes(category))
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loadingMore && !loading) {
+          loadPage(page + 1, false);
+        }
+      },
+      { rootMargin: "200px" }
     );
-  }, [categorizedProducts, selectedCategories]);
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, page, filterKey]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((current) =>
@@ -95,51 +124,72 @@ export default function ProductList({ basePath, products }: Props) {
 
   const clearFilters = () => setSelectedCategories([]);
 
+  const allLabel = locale === "bg" ? "Всички" : "All";
+  const loadingLabel = locale === "bg" ? "Зареждане..." : "Loading...";
+  const loadingMoreLabel = locale === "bg" ? "Още резултати..." : "Loading more...";
+  const emptyLabel = locale === "bg" ? "Няма намерени продукти." : "No products found.";
+
   return (
     <div>
       <div className="category-filters">
-        {availableCategories.map((category) => {
-          const isActive = selectedCategories.includes(category);
+        {categoryOptions.map((category) => {
+          const isActive = selectedCategories.includes(category.slug);
           return (
             <button
-              key={category}
+              key={category.slug}
               type="button"
               className={isActive ? "filter-chip filter-chip--active" : "filter-chip"}
-              onClick={() => toggleCategory(category)}
+              onClick={() => toggleCategory(category.slug)}
             >
-              {category}
+              {category.label}
             </button>
           );
         })}
-        {availableCategories.length ? (
-          <button
-            type="button"
-            className={
-              selectedCategories.length
-                ? "filter-chip filter-chip--clear"
-                : "filter-chip filter-chip--clear filter-chip--disabled"
-            }
-            onClick={clearFilters}
-            disabled={!selectedCategories.length}
-          >
-            All
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className={
+            selectedCategories.length
+              ? "filter-chip filter-chip--clear"
+              : "filter-chip filter-chip--clear filter-chip--disabled"
+          }
+          onClick={clearFilters}
+          disabled={!selectedCategories.length}
+        >
+          {allLabel}
+        </button>
       </div>
-      <div className="section product-grid">
-        {filteredProducts.map((product) => (
-          <Link
-            key={product.slug}
-            href={`${basePath}/products/${product.slug}`}
-            className="product-card"
-          >
-            <h3>{product.name}</h3>
-            <p>{product.summary}</p>
-            {product.priceNote ? <span>{product.priceNote}</span> : null}
-            {product.lastChecked ? <span>{product.lastChecked}</span> : null}
-          </Link>
-        ))}
+      <div className="product-search">
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={locale === "bg" ? "Търсене по име или описание" : "Search by name or description"}
+        />
       </div>
+      {loading ? (
+        <p style={{ marginTop: 16, color: "var(--ink-muted)" }}>{loadingLabel}</p>
+      ) : products.length ? (
+        <div className="section product-grid">
+          {products.map((product) => (
+            <Link
+              key={product.slug}
+              href={`${basePath}/products/${product.slug}`}
+              className="product-card"
+            >
+              <h3>{product.name}</h3>
+              <p>{product.summary}</p>
+              {product.priceNote ? <span>{product.priceNote}</span> : null}
+              {product.lastChecked ? <span>{product.lastChecked}</span> : null}
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p style={{ marginTop: 16, color: "var(--ink-muted)" }}>{emptyLabel}</p>
+      )}
+      <div ref={sentinelRef} />
+      {loadingMore ? (
+        <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>{loadingMoreLabel}</p>
+      ) : null}
     </div>
   );
 }

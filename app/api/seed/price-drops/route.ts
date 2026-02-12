@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getProductCategories } from "@/lib/product-categories";
+import { normalizeProductName } from "@/lib/product-normalize";
 
 const FAKE_PRODUCTS = [
   {
@@ -45,13 +47,16 @@ export async function POST() {
   let createdPrices = 0;
 
   for (const productSeed of FAKE_PRODUCTS) {
+    const normalizedName = normalizeProductName(productSeed.name);
+    const categories = getProductCategories(normalizedName, normalizedName);
     const product = await prisma.product.upsert({
       where: { slug: productSeed.slug },
-      update: { name: productSeed.name, description: productSeed.name },
+      update: { name: normalizedName, description: normalizedName, categories },
       create: {
         slug: productSeed.slug,
-        name: productSeed.name,
-        description: productSeed.name,
+        name: normalizedName,
+        description: normalizedName,
+        categories,
       },
     });
 
@@ -69,6 +74,7 @@ export async function POST() {
       amount,
       currency: "EUR",
       recordedAt: dates[index] ?? new Date(),
+      source: "seed",
     }));
 
     await prisma.price.createMany({ data: priceData });
