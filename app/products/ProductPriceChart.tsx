@@ -29,7 +29,7 @@ export default function ProductPriceChart({ slug, currencyLabel }: Props) {
     let active = true;
     setSeries(getProductHistory(slug));
 
-    fetch(`/api/prices?productSlug=${encodeURIComponent(slug)}`)
+    fetch(`/api/prices?productSlug=${encodeURIComponent(slug)}&maxPoints=1000`)
       .then(async (response) => {
         if (!response.ok) {
           throw new Error("Failed to load price history");

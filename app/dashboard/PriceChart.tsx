@@ -195,7 +195,7 @@ export default function PriceChart({
     setLoading(true);
     setSeriesOverride(null);
 
-    fetch(`/api/prices?productSlug=${encodeURIComponent(product.slug)}`, {
+    fetch(`/api/prices?productSlug=${encodeURIComponent(product.slug)}&maxPoints=1000`, {
       signal: controller.signal,
     })
       .then(async (response) => {

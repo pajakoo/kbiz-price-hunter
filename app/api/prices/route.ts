@@ -7,6 +7,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const productId = searchParams.get("productId")?.trim() ?? "";
   const productSlug = searchParams.get("productSlug")?.trim() ?? "";
+  const maxPointsParam = Number.parseInt(searchParams.get("maxPoints") ?? "", 10);
+  const maxPoints = Number.isFinite(maxPointsParam) && maxPointsParam > 0
+    ? Math.min(maxPointsParam, 2000)
+    : 1000;
 
   if (!productId && !productSlug) {
     return NextResponse.json(
@@ -25,8 +29,17 @@ export async function GET(request: Request) {
 
   const prices = await prisma.price.findMany({
     where: { productId: product.id },
-    orderBy: { recordedAt: "asc" },
-    include: { store: true },
+    orderBy: { recordedAt: "desc" },
+    take: maxPoints,
+    select: {
+      amount: true,
+      recordedAt: true,
+      storeId: true,
+      source: true,
+      store: {
+        select: { name: true, city: true },
+      },
+    },
   });
 
   const series = prices.reduce<
@@ -56,10 +69,15 @@ export async function GET(request: Request) {
     return acc;
   }, {});
 
+  const seriesValues = Object.values(series).map((entry) => ({
+    ...entry,
+    points: entry.points.sort((a, b) => a.date.localeCompare(b.date)),
+  }));
+
   return NextResponse.json({
     ok: true,
     product: { id: product.id, slug: product.slug, name: product.name },
-    series: Object.values(series),
+    series: seriesValues,
   });
 }
 
