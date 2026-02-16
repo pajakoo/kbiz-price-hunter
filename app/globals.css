@@ -165,6 +165,10 @@ a {
   background: transparent;
 }
 
+.button--icon {
+  gap: 8px;
+}
+
 .button:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow);
@@ -198,6 +202,26 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.dashboard-actions {
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+  align-items: center;
+}
+
+html[data-theme="dark"] .dashboard-actions {
+  background: transparent;
 }
 
 .pill {
@@ -355,11 +379,32 @@ html[data-theme="dark"] .pill {
 
 .product-search {
   margin-top: 16px;
-  max-width: 420px;
+  max-width: 520px;
 }
 
 .product-search input {
   margin-bottom: 0;
+  padding: 14px 16px;
+  font-size: 1rem;
+  border-width: 2px;
+  border-color: var(--ink);
+  background: white;
+  box-shadow: 0 10px 24px rgba(31, 36, 40, 0.12);
+}
+
+.product-search input::placeholder {
+  color: var(--ink-muted);
+}
+
+.product-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+html[data-theme="dark"] .product-search input {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--accent);
 }
 
 .filter-chip {

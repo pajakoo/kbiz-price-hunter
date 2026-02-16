@@ -13,9 +13,16 @@ type Props = {
   slugLabel: string;
   nameLabel: string;
   descriptionLabel: string;
+  priceLabel: string;
+  storeLabel: string;
+  cityLabel: string;
+  dateLabel: string;
   slugPlaceholder: string;
   namePlaceholder: string;
   descriptionPlaceholder: string;
+  pricePlaceholder: string;
+  storePlaceholder: string;
+  cityPlaceholder: string;
   submitLabel: string;
   submittingLabel: string;
   successMessage: string;
@@ -28,9 +35,16 @@ export default function ProductCreateForm({
   slugLabel,
   nameLabel,
   descriptionLabel,
+  priceLabel,
+  storeLabel,
+  cityLabel,
+  dateLabel,
   slugPlaceholder,
   namePlaceholder,
   descriptionPlaceholder,
+  pricePlaceholder,
+  storePlaceholder,
+  cityPlaceholder,
   submitLabel,
   submittingLabel,
   successMessage,
@@ -41,13 +55,18 @@ export default function ProductCreateForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     setLoading(true);
     setStatus(null);
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const slug = String(formData.get("slug") ?? "").trim();
     const name = String(formData.get("name") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
+    const price = String(formData.get("price") ?? "").trim();
+    const storeName = String(formData.get("storeName") ?? "").trim();
+    const storeCity = String(formData.get("storeCity") ?? "").trim();
+    const recordedAt = String(formData.get("recordedAt") ?? "").trim();
 
     const response = await fetch("/api/products", {
       method: "POST",
@@ -56,6 +75,10 @@ export default function ProductCreateForm({
         slug,
         name,
         description: description || null,
+        price,
+        storeName,
+        storeCity: storeCity || null,
+        recordedAt,
       }),
     });
 
@@ -77,7 +100,7 @@ export default function ProductCreateForm({
       type: "success",
       message: successMessage.replace("{name}", createdName),
     });
-    event.currentTarget.reset();
+    form.reset();
     setLoading(false);
   }
 
@@ -118,6 +141,33 @@ export default function ProductCreateForm({
               resize: "vertical",
             }}
           />
+          <label htmlFor="price">{priceLabel}</label>
+          <input
+            id="price"
+            name="price"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder={pricePlaceholder}
+            required
+          />
+          <label htmlFor="storeName">{storeLabel}</label>
+          <input
+            id="storeName"
+            name="storeName"
+            type="text"
+            placeholder={storePlaceholder}
+            required
+          />
+          <label htmlFor="storeCity">{cityLabel}</label>
+          <input
+            id="storeCity"
+            name="storeCity"
+            type="text"
+            placeholder={cityPlaceholder}
+          />
+          <label htmlFor="recordedAt">{dateLabel}</label>
+          <input id="recordedAt" name="recordedAt" type="date" required />
           <button className="button" type="submit" disabled={loading}>
             {loading ? submittingLabel : submitLabel}
           </button>

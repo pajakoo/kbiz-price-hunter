@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ShoppingCart, LogOut } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import PriceChart from "@/app/dashboard/PriceChart";
 import ProductCreateForm from "@/app/dashboard/ProductCreateForm";
@@ -168,10 +169,29 @@ export default async function DashboardPage({
   return (
     <main className="page-shell">
       <div className="container">
-        <h1>{dict.dashboard.title}</h1>
-        <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>
-          {dict.dashboard.welcomeLine.replace("{email}", session.user.email)}
-        </p>
+        <div className="dashboard-header">
+          <div>
+            <h1>{dict.dashboard.title}</h1>
+            <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>
+              {dict.dashboard.welcomeLine.replace("{email}", session.user.email)}
+            </p>
+          </div>
+          <div
+            className="dashboard-actions"
+            style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
+          >
+            <Link className="button button--icon" href={`${basePath}/products`}>
+              <ShoppingCart size={18} aria-hidden="true" />
+              {dict.dashboard.browse}
+            </Link>
+            <form action="/api/auth/logout" method="post">
+              <button className="button ghost button--icon" type="submit">
+                <LogOut size={18} aria-hidden="true" />
+                {dict.dashboard.logout}
+              </button>
+            </form>
+          </div>
+        </div>
         <div
           className="section grid"
           style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}
@@ -189,40 +209,16 @@ export default async function DashboardPage({
             <p>{dict.dashboard.alertsBody}</p>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <Link className="button ghost" href={`${basePath}/products`}>
-            {dict.dashboard.browse}
-          </Link>
-          <form action="/api/auth/logout" method="post">
-            <button className="button" type="submit">
-              {dict.dashboard.logout}
-            </button>
-          </form>
-        </div>
-        <ProductCreateForm
-          title={dict.dashboard.createProductTitle}
-          body={dict.dashboard.createProductBody}
-          slugLabel={dict.dashboard.createProductSlugLabel}
-          nameLabel={dict.dashboard.createProductNameLabel}
-          descriptionLabel={dict.dashboard.createProductDescriptionLabel}
-          slugPlaceholder={dict.dashboard.createProductSlugPlaceholder}
-          namePlaceholder={dict.dashboard.createProductNamePlaceholder}
-          descriptionPlaceholder={dict.dashboard.createProductDescriptionPlaceholder}
-          submitLabel={dict.dashboard.createProductSubmit}
-          submittingLabel={dict.dashboard.createProductSubmitting}
-          successMessage={dict.dashboard.createProductSuccess}
-          errorMessage={dict.dashboard.createProductError}
-        />
-        <CsvImportForm
-          title={dict.dashboard.importCsvTitle}
-          body={dict.dashboard.importCsvBody}
-          fileLabel={dict.dashboard.importCsvFileLabel}
-          dateLabel={dict.dashboard.importCsvDateLabel}
-          dateHelp={dict.dashboard.importCsvDateHelp}
-          submitLabel={dict.dashboard.importCsvSubmit}
-          submittingLabel={dict.dashboard.importCsvSubmitting}
-          successMessage={dict.dashboard.importCsvSuccess}
-          errorMessage={dict.dashboard.importCsvError}
+        <PriceChart
+          productLabel={dict.chart.product}
+          storeLabel={dict.chart.store}
+          cityLabel={dict.chart.city}
+          allStoresLabel={dict.chart.allStores}
+          allCitiesLabel={dict.chart.allCities}
+          currencyLabel="EUR"
+          emptyStateLabel={dict.chart.empty}
+          loadingLabel={dict.chart.loading}
+          extraProducts={chartProducts}
         />
         <section className="section">
           <div className="card">
@@ -290,16 +286,37 @@ export default async function DashboardPage({
             )}
           </div>
         </section>
-        <PriceChart
-          productLabel={dict.chart.product}
-          storeLabel={dict.chart.store}
-          cityLabel={dict.chart.city}
-          allStoresLabel={dict.chart.allStores}
-          allCitiesLabel={dict.chart.allCities}
-          currencyLabel="EUR"
-          emptyStateLabel={dict.chart.empty}
-          loadingLabel={dict.chart.loading}
-          extraProducts={chartProducts}
+        <CsvImportForm
+          title={dict.dashboard.importCsvTitle}
+          body={dict.dashboard.importCsvBody}
+          fileLabel={dict.dashboard.importCsvFileLabel}
+          dateLabel={dict.dashboard.importCsvDateLabel}
+          dateHelp={dict.dashboard.importCsvDateHelp}
+          submitLabel={dict.dashboard.importCsvSubmit}
+          submittingLabel={dict.dashboard.importCsvSubmitting}
+          successMessage={dict.dashboard.importCsvSuccess}
+          errorMessage={dict.dashboard.importCsvError}
+        />
+        <ProductCreateForm
+          title={dict.dashboard.createProductTitle}
+          body={dict.dashboard.createProductBody}
+          slugLabel={dict.dashboard.createProductSlugLabel}
+          nameLabel={dict.dashboard.createProductNameLabel}
+          descriptionLabel={dict.dashboard.createProductDescriptionLabel}
+          priceLabel={dict.dashboard.createProductPriceLabel}
+          storeLabel={dict.dashboard.createProductStoreLabel}
+          cityLabel={dict.dashboard.createProductCityLabel}
+          dateLabel={dict.dashboard.createProductDateLabel}
+          slugPlaceholder={dict.dashboard.createProductSlugPlaceholder}
+          namePlaceholder={dict.dashboard.createProductNamePlaceholder}
+          descriptionPlaceholder={dict.dashboard.createProductDescriptionPlaceholder}
+          pricePlaceholder={dict.dashboard.createProductPricePlaceholder}
+          storePlaceholder={dict.dashboard.createProductStorePlaceholder}
+          cityPlaceholder={dict.dashboard.createProductCityPlaceholder}
+          submitLabel={dict.dashboard.createProductSubmit}
+          submittingLabel={dict.dashboard.createProductSubmitting}
+          successMessage={dict.dashboard.createProductSuccess}
+          errorMessage={dict.dashboard.createProductError}
         />
       </div>
     </main>

@@ -68,9 +68,16 @@ type Dictionary = {
     createProductSlugLabel: string;
     createProductNameLabel: string;
     createProductDescriptionLabel: string;
+    createProductPriceLabel: string;
+    createProductStoreLabel: string;
+    createProductCityLabel: string;
+    createProductDateLabel: string;
     createProductSlugPlaceholder: string;
     createProductNamePlaceholder: string;
     createProductDescriptionPlaceholder: string;
+    createProductPricePlaceholder: string;
+    createProductStorePlaceholder: string;
+    createProductCityPlaceholder: string;
     createProductSubmit: string;
     createProductSubmitting: string;
     createProductSuccess: string;
@@ -215,9 +222,16 @@ const dictionary: Record<Locale, Dictionary> = {
       createProductSlugLabel: "Slug",
       createProductNameLabel: "Name",
       createProductDescriptionLabel: "Description (optional)",
+      createProductPriceLabel: "Price (EUR)",
+      createProductStoreLabel: "Store",
+      createProductCityLabel: "City (optional)",
+      createProductDateLabel: "Price date",
       createProductSlugPlaceholder: "test-product",
       createProductNamePlaceholder: "Test Product",
       createProductDescriptionPlaceholder: "Short description",
+      createProductPricePlaceholder: "3.99",
+      createProductStorePlaceholder: "Store name",
+      createProductCityPlaceholder: "Sofia",
       createProductSubmit: "Create product",
       createProductSubmitting: "Creating...",
       createProductSuccess: "Created {name}.",
@@ -272,39 +286,39 @@ const dictionary: Record<Locale, Dictionary> = {
       access: "Достъп",
     },
     home: {
-      pill: "Каталог с индексирани цени",
-      title: "Запази идеята. Намали сложността.",
+      pill: "Каталог с реални цени",
+      title: "Следи цените. Спестявай умно.",
       intro:
-        "Kbiz Price Hunter е чист, индексиран каталог за цени на хранителни продукти. Публичните страници се виждат от търсачките, а личното табло остава фокусирано върху списъците и сравненията.",
+        "Kbiz Price Hunter събира цени на продукти от различни магазини в един публичен каталог. Сравняваш бързо, виждаш история на цените и получаваш известия при спад.",
       browse: "Виж продуктите",
       magic: "Вземи магически линк",
       cards: [
         {
-          title: "Индексиране по подразбиране",
-          body: "Страниците са SSR с sitemap и robots, за да се виждат от търсачките.",
+          title: "Ясни продуктови страници",
+          body: "Всяка стока има собствена страница с цена, диапазон и последна актуализация.",
         },
         {
-          title: "По-малко части",
-          body: "Едно Next.js приложение, Prisma и Postgres. Без двойни сървъри.",
+          title: "Сравнение между магазини",
+          body: "Провери къде е най-добрата цена и как се променя във времето.",
         },
         {
-          title: "Готово за аларми",
-          body: "Добавяй известия за спад на цените без хаос в схемата.",
+          title: "Известия за намаления",
+          body: "Активирай алерт и получавай сигнал при спад на цена.",
         },
       ],
-      howTitle: "Как работи",
+      howTitle: "Как помага",
       how: [
         {
           title: "Публичен каталог",
-          body: "Всеки продукт има чист URL и метаданни. Това индексират търсачките.",
+          body: "Всички продукти са с чисти URL адреси и готови за индексиране.",
         },
         {
-          title: "Лично табло",
-          body: "Влезлите потребители управляват списъци, сравняват магазини и история на цените.",
+          title: "Персонални аларми",
+          body: "Запази любими продукти и настрой известия при намаление.",
         },
         {
-          title: "Структурирани данни",
-          body: "Postgres пази връзките ясни между продукти, магазини и цени.",
+          title: "История на цените",
+          body: "Виж как се движат цените по магазини и във времето.",
         },
       ],
     },
@@ -364,9 +378,16 @@ const dictionary: Record<Locale, Dictionary> = {
       createProductSlugLabel: "Слъг",
       createProductNameLabel: "Име",
       createProductDescriptionLabel: "Описание (по избор)",
+      createProductPriceLabel: "Цена (EUR)",
+      createProductStoreLabel: "Магазин",
+      createProductCityLabel: "Град (по избор)",
+      createProductDateLabel: "Дата на цената",
       createProductSlugPlaceholder: "test-product",
       createProductNamePlaceholder: "Тестов продукт",
       createProductDescriptionPlaceholder: "Кратко описание",
+      createProductPricePlaceholder: "3.99",
+      createProductStorePlaceholder: "Име на магазин",
+      createProductCityPlaceholder: "София",
       createProductSubmit: "Създай продукт",
       createProductSubmitting: "Създаване...",
       createProductSuccess: "Създаден е {name}.",
