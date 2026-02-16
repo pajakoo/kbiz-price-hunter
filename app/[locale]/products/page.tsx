@@ -3,10 +3,23 @@ import { getDictionary, type Locale } from "@/lib/i18n";
 import { getCategoryOptions } from "@/lib/product-categories";
 import { getProductCards } from "@/lib/product-list";
 
-export const metadata = {
-  title: "Product index | Kbiz Price Hunter",
-  description: "Browse public product pages with clean URLs and pricing notes.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const normalizedLocale: Locale = locale === "bg" ? "bg" : "en";
+  const dict = getDictionary(normalizedLocale);
+
+  return {
+    title: "Product index | Kbiz Price Hunter",
+    description: dict.products.subtitle,
+    alternates: {
+      canonical: `/${normalizedLocale}/products`,
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 

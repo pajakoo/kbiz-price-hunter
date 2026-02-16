@@ -32,6 +32,9 @@ export async function generateMetadata({ params }: PageProps) {
       normalizedLocale === "bg"
         ? `Категория ${category.label} с актуални цени.`
         : `Category ${category.label} with current prices.`,
+    alternates: {
+      canonical: `/${normalizedLocale}/products/category/${slug}`,
+    },
   };
 }
 

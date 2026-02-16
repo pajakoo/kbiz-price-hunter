@@ -8,10 +8,22 @@ import PriceAlertManager from "@/app/dashboard/PriceAlertManager";
 import { prisma } from "@/lib/prisma";
 import { getDictionary, type Locale } from "@/lib/i18n";
 
-export const metadata = {
-  title: "Dashboard | Kbiz Price Hunter",
-  description: "Private pricing workspace for lists and store comparisons.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const normalizedLocale: Locale = locale === "bg" ? "bg" : "en";
+
+  return {
+    title: "Dashboard | Kbiz Price Hunter",
+    description: "Private pricing workspace for lists and store comparisons.",
+    alternates: {
+      canonical: `/${normalizedLocale}/dashboard`,
+    },
+  };
+}
 
 export default async function DashboardPage({
   params,

@@ -1,6 +1,24 @@
 import Link from "next/link";
 import { getDictionary, type Locale } from "@/lib/i18n";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const normalizedLocale: Locale = locale === "bg" ? "bg" : "en";
+  const dict = getDictionary(normalizedLocale);
+
+  return {
+    title: "Kbiz Price Hunter",
+    description: dict.home.intro,
+    alternates: {
+      canonical: `/${normalizedLocale}`,
+    },
+  };
+}
+
 export default async function HomePage({
   params,
 }: {

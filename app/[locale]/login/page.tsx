@@ -1,10 +1,23 @@
 import LoginForm from "@/app/login/LoginForm";
 import { getDictionary, type Locale } from "@/lib/i18n";
 
-export const metadata = {
-  title: "Request access | Kbiz Price Hunter",
-  description: "Send a magic link to access the private dashboard.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const normalizedLocale: Locale = locale === "bg" ? "bg" : "en";
+  const dict = getDictionary(normalizedLocale);
+
+  return {
+    title: "Request access | Kbiz Price Hunter",
+    description: dict.login.intro,
+    alternates: {
+      canonical: `/${normalizedLocale}/login`,
+    },
+  };
+}
 
 export default async function LoginPage({
   params,

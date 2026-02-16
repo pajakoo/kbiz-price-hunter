@@ -67,6 +67,9 @@ export async function generateMetadata({ params }: PageProps) {
   return {
     title: `${product.name} | Kbiz Price Hunter`,
     description: product.summary,
+    alternates: {
+      canonical: `/${normalizedLocale}/products/${slug}`,
+    },
   };
 }
 
