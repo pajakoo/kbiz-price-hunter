@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import ProductDeleteButton from "@/app/products/ProductDeleteButton";
 import type { CategoryOption } from "@/lib/product-categories";
 import type { ProductCard } from "@/lib/product-list";
 
@@ -14,6 +15,11 @@ type Props = {
   initialTotal: number;
   pageSize: number;
   categoryOptions: Array<Pick<CategoryOption, "slug" | "label">>;
+  isAdmin?: boolean;
+  deleteLabel: string;
+  deleteConfirm: string;
+  deleteSuccess: string;
+  deleteError: string;
   initialQuery?: string;
   initialCategories?: string[];
 };
@@ -33,6 +39,11 @@ export default function ProductList({
   initialTotal,
   pageSize,
   categoryOptions,
+  isAdmin = false,
+  deleteLabel,
+  deleteConfirm,
+  deleteSuccess,
+  deleteError,
   initialQuery = DEFAULT_QUERY,
   initialCategories = [],
 }: Props) {
@@ -171,16 +182,24 @@ export default function ProductList({
       ) : products.length ? (
         <div className="section product-grid">
           {products.map((product) => (
-            <Link
-              key={product.slug}
-              href={`${basePath}/products/${product.slug}`}
-              className="product-card"
-            >
-              <h3>{product.name}</h3>
-              <p>{product.summary}</p>
-              {product.priceNote ? <span>{product.priceNote}</span> : null}
-              {product.lastChecked ? <span>{product.lastChecked}</span> : null}
-            </Link>
+            <div key={product.slug} className="product-card">
+              <Link className="product-card__link" href={`${basePath}/products/${product.slug}`}>
+                <h3>{product.name}</h3>
+                <p>{product.summary}</p>
+                {product.priceNote ? <span>{product.priceNote}</span> : null}
+                {product.lastChecked ? <span>{product.lastChecked}</span> : null}
+              </Link>
+              {isAdmin ? (
+                <ProductDeleteButton
+                  slug={product.slug}
+                  basePath={basePath}
+                  label={deleteLabel}
+                  confirmLabel={deleteConfirm}
+                  successLabel={deleteSuccess}
+                  errorLabel={deleteError}
+                />
+              ) : null}
+            </div>
           ))}
         </div>
       ) : (

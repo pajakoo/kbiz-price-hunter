@@ -11,7 +11,7 @@ export async function generateMetadata({
   const dict = getDictionary(normalizedLocale);
 
   return {
-    title: "Request access | Kbiz Price Hunter",
+    title: "Request access | Ловец на цени",
     description: dict.login.intro,
     alternates: {
       canonical: `/${normalizedLocale}/login`,

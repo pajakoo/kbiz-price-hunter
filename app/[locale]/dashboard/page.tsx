@@ -18,7 +18,7 @@ export async function generateMetadata({
   const normalizedLocale: Locale = locale === "bg" ? "bg" : "en";
 
   return {
-    title: "Dashboard | Kbiz Price Hunter",
+    title: "Dashboard | Ловец на цени",
     description: "Private pricing workspace for lists and store comparisons.",
     alternates: {
       canonical: `/${normalizedLocale}/dashboard`,

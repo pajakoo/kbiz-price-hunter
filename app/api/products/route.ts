@@ -137,3 +137,39 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  const session = await getSession();
+  if (!session || session.user.email !== "pajakoo@abv.bg") {
+    return NextResponse.json({ ok: false, error: "Unauthorized." }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const slug = searchParams.get("slug")?.trim() ?? "";
+  if (!slug) {
+    return NextResponse.json({ ok: false, error: "Slug is required." }, { status: 400 });
+  }
+
+  try {
+    const product = await prisma.product.findUnique({ where: { slug } });
+    if (!product) {
+      return NextResponse.json({ ok: false, error: "Product not found." }, { status: 404 });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.price.deleteMany({ where: { productId: product.id } });
+      await tx.priceAlertSubscription.deleteMany({ where: { productId: product.id } });
+      await tx.priceAlertNotification.deleteMany({ where: { productId: product.id } });
+      await tx.shoppingListItem.deleteMany({ where: { productId: product.id } });
+      await tx.product.delete({ where: { id: product.id } });
+    });
+
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (error) {
+    console.error("Product delete failed", error);
+    return NextResponse.json(
+      { ok: false, error: "Unable to delete product." },
+      { status: 500 }
+    );
+  }
+}

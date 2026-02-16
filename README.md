@@ -1,4 +1,4 @@
-# Kbiz Price Hunter
+# Ловец на цени
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/e7c8c4fe-5a0c-43d0-9ebc-16f11de71360/deploy-status)](https://app.netlify.com/sites/kbiz-price-hunter/deploys)
 

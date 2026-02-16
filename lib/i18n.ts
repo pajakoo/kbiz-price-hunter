@@ -42,6 +42,11 @@ type Dictionary = {
     alertEnabled: string;
     alertDisabled: string;
     alertError: string;
+    noPrices: string;
+    deleteProduct: string;
+    deleteProductConfirm: string;
+    deleteProductSuccess: string;
+    deleteProductError: string;
   };
   login: {
     title: string;
@@ -137,7 +142,7 @@ const dictionary: Record<Locale, Dictionary> = {
       pill: "Searchable pricing catalog",
       title: "Keep the idea. Cut the clutter.",
       intro:
-        "Kbiz Price Hunter is a clean, crawlable pricing index for everyday groceries. Public product pages are optimized for search bots, while the private dashboard stays focused on your shopping workflows.",
+        "Ловец на цени is a clean, crawlable pricing index for everyday groceries. Public product pages are optimized for search bots, while the private dashboard stays focused on your shopping workflows.",
       browse: "Browse products",
       magic: "Request a magic link",
       cards: [
@@ -179,22 +184,32 @@ const dictionary: Record<Locale, Dictionary> = {
       fallbackLastChecked: "Updated just now",
     },
     product: {
-      publicTag: "Public product page",
-      snapshot: "Pricing snapshot",
-      track: "What we track",
-      fallbackSummary: "Newly added product.",
-      fallbackPriceNote: "Avg range: 8 - 24 EUR",
-      fallbackLastChecked: "Updated just now",
-      fallbackHighlights: ["Track price changes", "Compare stores", "Watch for promos"],
-      alertTitle: "Price drop alerts",
-      alertBody: "Get notified when this product drops in price.",
+      publicTag: "Public product",
+      snapshot: "Price snapshot",
+      track: "What to track",
+      fallbackSummary: "Compare price ranges, stores, and weekly updates in one place.",
+      fallbackPriceNote: "Avg range: 18 - 24 EUR",
+      fallbackLastChecked: "Updated today",
+      fallbackHighlights: [
+        "Price history by store",
+        "Category-based comparisons",
+        "Alerts for price drops",
+      ],
+      alertTitle: "Price alerts",
+      alertBody: "Get notified when the price drops below your threshold.",
       alertEnable: "Enable alert",
       alertDisable: "Disable alert",
       alertLogin: "Log in to enable alerts",
       alertEnabled: "Alert enabled.",
       alertDisabled: "Alert disabled.",
       alertError: "Unable to update alert.",
+      noPrices: "No prices yet.",
+      deleteProduct: "Remove product",
+      deleteProductConfirm: "Are you sure you want to remove this product?",
+      deleteProductSuccess: "Product removed.",
+      deleteProductError: "Unable to remove product.",
     },
+
     login: {
       title: "Request a magic link",
       intro:
@@ -289,7 +304,7 @@ const dictionary: Record<Locale, Dictionary> = {
       pill: "Каталог с реални цени",
       title: "Следи цените. Спестявай умно.",
       intro:
-        "Kbiz Price Hunter събира цени на продукти от различни магазини в един публичен каталог. Сравняваш бързо, виждаш история на цените и получаваш известия при спад.",
+        "Ловец на цени събира цени на продукти от различни магазини в един публичен каталог. Сравняваш бързо, виждаш история на цените и получаваш известия при спад.",
       browse: "Виж продуктите",
       magic: "Вземи магически линк",
       cards: [
@@ -331,26 +346,32 @@ const dictionary: Record<Locale, Dictionary> = {
       fallbackLastChecked: "Обновено току-що",
     },
     product: {
-      publicTag: "Публична продуктова страница",
+      publicTag: "Публичен продукт",
       snapshot: "Снимка на цените",
-      track: "Какво следим",
-      fallbackSummary: "Току-що добавен продукт.",
-      fallbackPriceNote: "Среден диапазон: 8 - 24 EUR",
-      fallbackLastChecked: "Обновено току-що",
+      track: "Какво да следим",
+      fallbackSummary: "Сравнявай диапазони, магазини и седмични актуализации на едно място.",
+      fallbackPriceNote: "Среден диапазон: 18 - 24 EUR",
+      fallbackLastChecked: "Обновено днес",
       fallbackHighlights: [
-        "Следи промени на цени",
-        "Сравнявай магазини",
-        "Хващай промоции",
+        "История на цените по магазини",
+        "Сравнения по категории",
+        "Известия за спад",
       ],
-      alertTitle: "Известия при намаление",
-      alertBody: "Ще получиш известие, когато този продукт поевтинее.",
-      alertEnable: "Включи известие",
-      alertDisable: "Изключи известие",
-      alertLogin: "Влез, за да включиш известие",
-      alertEnabled: "Известието е включено.",
-      alertDisabled: "Известието е изключено.",
-      alertError: "Неуспешно обновяване на известие.",
+      alertTitle: "Известия за цена",
+      alertBody: "Получавай известие, когато цената падне под избран праг.",
+      alertEnable: "Активирай известие",
+      alertDisable: "Спри известие",
+      alertLogin: "Влез, за да активираш известия",
+      alertEnabled: "Известието е активно.",
+      alertDisabled: "Известието е спряно.",
+      alertError: "Грешка при обновяване на известието.",
+      noPrices: "Все още няма цени.",
+      deleteProduct: "Премахни продукт",
+      deleteProductConfirm: "Сигурни ли сте, че искате да премахнете продукта?",
+      deleteProductSuccess: "Продуктът е премахнат.",
+      deleteProductError: "Неуспешно премахване на продукта.",
     },
+
     login: {
       title: "Вземи магически линк",
       intro:

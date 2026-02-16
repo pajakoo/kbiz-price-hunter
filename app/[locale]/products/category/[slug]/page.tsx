@@ -23,11 +23,11 @@ export async function generateMetadata({ params }: PageProps) {
   const category = findCategory(slug);
 
   if (!category) {
-    return { title: "Category not found | Kbiz Price Hunter" };
+    return { title: "Category not found | Ловец на цени" };
   }
 
   return {
-    title: `${category.label} | Kbiz Price Hunter`,
+    title: `${category.label} | Ловец на цени`,
     description:
       normalizedLocale === "bg"
         ? `Категория ${category.label} с актуални цени.`

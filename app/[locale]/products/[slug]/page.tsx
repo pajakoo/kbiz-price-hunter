@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductPriceChart from "@/app/products/ProductPriceChart";
 import FavoriteAlertToggle from "@/app/products/FavoriteAlertToggle";
+import ProductDeleteButton from "@/app/products/ProductDeleteButton";
 import { prisma } from "@/lib/prisma";
 import { getLocalizedProduct, getProduct } from "@/lib/products";
 import { getDictionary, type Locale } from "@/lib/i18n";
@@ -8,6 +10,7 @@ import { getSession } from "@/lib/auth";
 
 type PageProps = {
   params: Promise<{ slug: string; locale: string }>;
+  searchParams?: Promise<{ sort?: string }>;
 };
 
 export const dynamic = "force-dynamic";
@@ -61,11 +64,11 @@ export async function generateMetadata({ params }: PageProps) {
   const dict = getDictionary(normalizedLocale);
   const product = await getDisplayProduct(slug, normalizedLocale, dict);
   if (!product) {
-    return { title: "Product not found | Kbiz Price Hunter" };
+    return { title: "Product not found | Ловец на цени" };
   }
 
   return {
-    title: `${product.name} | Kbiz Price Hunter`,
+    title: `${product.name} | Ловец на цени`,
     description: product.summary,
     alternates: {
       canonical: `/${normalizedLocale}/products/${slug}`,
@@ -73,16 +76,19 @@ export async function generateMetadata({ params }: PageProps) {
   };
 }
 
-export default async function ProductPage({ params }: PageProps) {
+export default async function ProductPage({ params, searchParams }: PageProps) {
   const { slug, locale } = await params;
   const normalizedLocale: Locale = locale === "bg" ? "bg" : "en";
   const dict = getDictionary(normalizedLocale);
+  const basePath = `/${normalizedLocale}`;
+  const sortParam = (await searchParams)?.sort ?? "price-asc";
+  const sortKey = sortParam === "price-desc" ? "price-desc" : "price-asc";
   const product = await getDisplayProduct(slug, normalizedLocale, dict);
   if (!product) {
     notFound();
   }
   const session = await getSession();
-  const basePath = `/${normalizedLocale}`;
+
   const subscription =
     session && product.productId
       ? await prisma.priceAlertSubscription.findUnique({
@@ -136,6 +142,11 @@ export default async function ProductPage({ params }: PageProps) {
   const lastChecked = lastUpdate
     ? `${updatedLabel} ${dateFormatter.format(lastUpdate)}`
     : product.lastChecked;
+  const sortLowLabel = normalizedLocale === "bg" ? "Най-ниска цена" : "Lowest price";
+  const sortHighLabel = normalizedLocale === "bg" ? "Най-висока цена" : "Highest price";
+  const sortedStorePrices = Array.from(storeLatest.values()).sort((left, right) =>
+    sortKey === "price-desc" ? right.amount - left.amount : left.amount - right.amount
+  );
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -174,6 +185,16 @@ export default async function ProductPage({ params }: PageProps) {
               <h3>{dict.product.snapshot}</h3>
               <p>{priceNote}</p>
               <p>{lastChecked}</p>
+              {session?.user.email === "pajakoo@abv.bg" ? (
+                <ProductDeleteButton
+                  slug={slug}
+                  basePath={basePath}
+                  label={dict.product.deleteProduct}
+                  confirmLabel={dict.product.deleteProductConfirm}
+                  successLabel={dict.product.deleteProductSuccess}
+                  errorLabel={dict.product.deleteProductError}
+                />
+              ) : null}
             </div>
             <div className="card">
               <h3>{dict.product.track}</h3>
@@ -236,6 +257,24 @@ export default async function ProductPage({ params }: PageProps) {
 
         <section className="section">
           <h2>Store comparison</h2>
+          <div className="table-actions">
+            <Link
+              className={
+                sortKey === "price-asc" ? "filter-chip filter-chip--active" : "filter-chip"
+              }
+              href={`${basePath}/products/${slug}?sort=price-asc`}
+            >
+              {sortLowLabel}
+            </Link>
+            <Link
+              className={
+                sortKey === "price-desc" ? "filter-chip filter-chip--active" : "filter-chip"
+              }
+              href={`${basePath}/products/${slug}?sort=price-desc`}
+            >
+              {sortHighLabel}
+            </Link>
+          </div>
           <div className="card table-shell">
             <table className="price-table">
               <thead>
@@ -248,7 +287,7 @@ export default async function ProductPage({ params }: PageProps) {
               </thead>
               <tbody>
                 {storeLatest.size ? (
-                  Array.from(storeLatest.values()).map((price) => (
+                  sortedStorePrices.map((price) => (
                     <tr key={price.id}>
                       <td>{price.store.name}</td>
                       <td>—</td>
@@ -258,13 +297,14 @@ export default async function ProductPage({ params }: PageProps) {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4}>No prices yet.</td>
+                    <td colSpan={4}>{dict.product.noPrices}</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
         </section>
+
       </div>
     </main>
   );

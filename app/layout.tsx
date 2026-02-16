@@ -18,7 +18,7 @@ const bodyFont = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Kbiz Price Hunter",
+  title: "Ловец на цени",
   description:
     "Find the best grocery prices across stores with a simple, searchable catalog.",
   metadataBase: new URL(

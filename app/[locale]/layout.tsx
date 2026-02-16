@@ -31,7 +31,7 @@ export default async function LocaleLayout({
       <header className="site-header">
         <div className="container nav-wrap">
           <Link className="brand" href={basePath}>
-            Kbiz Price Hunter
+            Ловец на цени
           </Link>
           <nav className="nav-links">
             <Link href={`${basePath}/products`} className="nav-alert">

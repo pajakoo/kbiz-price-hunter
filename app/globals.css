@@ -432,6 +432,13 @@ html[data-theme="dark"] .product-search input {
   cursor: default;
 }
 
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
 html[data-theme="dark"] .filter-chip {
   background: rgba(255, 255, 255, 0.04);
   color: var(--ink);
@@ -456,6 +463,12 @@ html[data-theme="dark"] .filter-chip--active {
   border: 1px solid var(--line);
   background: white;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card__link {
+  display: grid;
+  gap: 10px;
+  color: inherit;
 }
 
 .product-card:hover {
