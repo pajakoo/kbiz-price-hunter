@@ -1,22 +1,24 @@
+import { createReadStream } from "fs";
+import fs from "fs/promises";
+import path from "path";
+import readline from "readline";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { getProductCategories } from "@/lib/product-categories";
 import { normalizeCity } from "@/lib/city-normalize";
 import { normalizeProductName } from "@/lib/product-normalize";
-import { promises as fs } from "node:fs";
-import { createReadStream } from "node:fs";
-import path from "node:path";
-import readline from "node:readline";
+import { slugify } from "@/lib/slugify";
 
 const REQUIRED_HEADERS = {
-  city: "Населено място",
   store: "Търговски обект",
+  city: "Населено място",
   productName: "Наименование на продукта",
   productCode: "Код на продукта",
   retailPrice: "Цена на дребно",
   promoPrice: "Цена в промоция",
 };
+
 
 type CsvRow = {
   city: string;
@@ -77,21 +79,13 @@ function parseCsvLine(line: string) {
 }
 
 
-function normalizeCode(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 function normalizeName(value: string) {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 function buildSlug(name: string) {
-  const normalizedName = normalizeCode(name);
-  return normalizedName ? `identical-${normalizedName}` : `identical-${Date.now()}`;
+  const normalizedName = slugify(name);
+  return normalizedName ? normalizedName : `product-${Date.now()}`;
 }
 
 function parsePrice(value: string) {
@@ -234,6 +228,46 @@ function bucketFor(products: Map<string, ProductBucket>, name: string) {
   return bucket;
 }
 
+async function migrateProductSlugs() {
+  const products = await prisma.product.findMany({
+    select: { id: true, name: true, slug: true },
+  });
+  const reserved = new Set(products.map((product) => product.slug));
+  let updated = 0;
+  let skipped = 0;
+
+  for (const product of products) {
+    reserved.delete(product.slug);
+    const baseSlug = slugify(normalizeProductName(product.name));
+    if (!baseSlug) {
+      skipped += 1;
+      reserved.add(product.slug);
+      continue;
+    }
+
+    let candidate = baseSlug;
+    let suffix = 2;
+    while (reserved.has(candidate)) {
+      candidate = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+
+    if (candidate !== product.slug) {
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { slug: candidate },
+      });
+      updated += 1;
+    } else {
+      skipped += 1;
+    }
+
+    reserved.add(candidate);
+  }
+
+  return { total: products.length, updated, skipped };
+}
+
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
@@ -241,6 +275,12 @@ export async function POST(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
+  const migrateSlugs = searchParams.get("migrateSlugs") === "1";
+  if (migrateSlugs) {
+    const result = await migrateProductSlugs();
+    return NextResponse.json({ ok: true, ...result });
+  }
+
   const rootParam = searchParams.get("root")?.trim();
   const limitParam = Number.parseInt(searchParams.get("limit") ?? "", 10);
   const categoriesParam = searchParams.get("categories") ?? searchParams.get("category") ?? "";

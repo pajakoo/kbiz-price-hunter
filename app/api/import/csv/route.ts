@@ -5,6 +5,7 @@ import { handlePriceDropAlert } from "@/lib/price-alerts";
 import { getProductCategories } from "@/lib/product-categories";
 import { normalizeCity } from "@/lib/city-normalize";
 import { normalizeProductName } from "@/lib/product-normalize";
+import { slugify } from "@/lib/slugify";
 
 const REQUIRED_HEADERS = {
   city: "Населено място",
@@ -63,22 +64,14 @@ function parseCsv(content: string) {
     .map(parseCsvLine);
 }
 
-function normalizeCode(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 function buildSlug(productCode: string, productName: string) {
-  const normalizedCode = normalizeCode(productCode);
-  if (normalizedCode) {
-    return `zlatna-${normalizedCode}`;
+  const normalizedName = slugify(productName);
+  if (normalizedName) {
+    return normalizedName;
   }
 
-  const normalizedName = normalizeCode(productName);
-  return normalizedName ? `zlatna-${normalizedName}` : `zlatna-${Date.now()}`;
+  const normalizedCode = slugify(productCode);
+  return normalizedCode ? normalizedCode : `product-${Date.now()}`;
 }
 
 function parsePrice(value: string) {
