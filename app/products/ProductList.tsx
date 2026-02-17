@@ -16,10 +16,10 @@ type Props = {
   pageSize: number;
   categoryOptions: Array<Pick<CategoryOption, "slug" | "label">>;
   isAdmin?: boolean;
-  deleteLabel: string;
-  deleteConfirm: string;
-  deleteSuccess: string;
-  deleteError: string;
+  deleteLabel?: string;
+  deleteConfirm?: string;
+  deleteSuccess?: string;
+  deleteError?: string;
   initialQuery?: string;
   initialCategories?: string[];
 };
@@ -40,10 +40,10 @@ export default function ProductList({
   pageSize,
   categoryOptions,
   isAdmin = false,
-  deleteLabel,
-  deleteConfirm,
-  deleteSuccess,
-  deleteError,
+  deleteLabel = "",
+  deleteConfirm = "",
+  deleteSuccess = "",
+  deleteError = "",
   initialQuery = DEFAULT_QUERY,
   initialCategories = [],
 }: Props) {
