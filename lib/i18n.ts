@@ -7,6 +7,7 @@ type Dictionary = {
     products: string;
     dashboard: string;
     access: string;
+    logout: string;
   };
   home: {
     pill: string;
@@ -137,6 +138,7 @@ const dictionary: Record<Locale, Dictionary> = {
       products: "Products",
       dashboard: "Dashboard",
       access: "Get Access",
+      logout: "Log out",
     },
     home: {
       pill: "Searchable pricing catalog",
@@ -299,6 +301,7 @@ const dictionary: Record<Locale, Dictionary> = {
       products: "Продукти",
       dashboard: "Табло",
       access: "Достъп",
+      logout: "Изход",
     },
     home: {
       pill: "Каталог с реални цени",

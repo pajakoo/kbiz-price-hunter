@@ -33,6 +33,10 @@ export default async function LocaleLayout({
           <Link className="brand" href={basePath}>
             Ловец на цени
           </Link>
+          <input id="nav-toggle" className="nav-toggle" type="checkbox" />
+          <label htmlFor="nav-toggle" className="nav-toggle-label">
+            Menu
+          </label>
           <nav className="nav-links">
             <Link href={`${basePath}/products`} className="nav-alert">
               {dict.nav.products}
@@ -44,9 +48,17 @@ export default async function LocaleLayout({
             </Link>
             <LocaleSwitcher locale={normalizedLocale} />
             <ThemeToggle />
-            <Link href={`${basePath}/login`} className="button ghost">
-              {dict.nav.access}
-            </Link>
+            {session ? (
+              <form action="/api/auth/logout" method="post" className="nav-logout">
+                <button type="submit" className="button ghost">
+                  {dict.nav.logout}
+                </button>
+              </form>
+            ) : (
+              <Link href={`${basePath}/login`} className="button ghost">
+                {dict.nav.access}
+              </Link>
+            )}
           </nav>
         </div>
       </header>

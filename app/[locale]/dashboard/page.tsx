@@ -184,12 +184,6 @@ export default async function DashboardPage({
               <ShoppingCart size={18} aria-hidden="true" />
               {dict.dashboard.browse}
             </Link>
-            <form action="/api/auth/logout" method="post">
-              <button className="button ghost button--icon" type="submit">
-                <LogOut size={18} aria-hidden="true" />
-                {dict.dashboard.logout}
-              </button>
-            </form>
           </div>
         </div>
         <div

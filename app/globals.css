@@ -97,10 +97,40 @@ a {
   font-size: 0.95rem;
 }
 
+.nav-toggle {
+  display: none;
+}
+
+.nav-toggle-label {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+}
+
+.nav-toggle-label::before {
+  content: "";
+  width: 16px;
+  height: 2px;
+  background: currentColor;
+  box-shadow: 0 5px 0 currentColor, 0 -5px 0 currentColor;
+  border-radius: 999px;
+}
+
 .nav-alert {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.nav-logout {
+  display: inline-flex;
+  margin: 0;
 }
 
 .nav-badge {
@@ -616,9 +646,47 @@ html[data-theme="dark"] textarea {
 }
 
 @media (max-width: 720px) {
-  .nav-links {
+  .nav-wrap {
+    position: relative;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    justify-content: space-between;
+  }
+
+  .nav-toggle-label {
+    display: inline-flex;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px;
+    width: min(240px, 86vw);
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    box-shadow: var(--shadow);
+  }
+
+  html[data-theme="dark"] .nav-links {
+    background: var(--paper-strong);
+  }
+
+  .nav-toggle:checked ~ .nav-links {
+    display: flex;
+  }
+
+  .nav-logout {
+    width: 100%;
+  }
+
+  .nav-logout .button {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .hero {

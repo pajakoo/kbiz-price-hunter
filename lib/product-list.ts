@@ -38,7 +38,7 @@ export async function getProductCards({
           ],
         }
       : {}),
-    ...(categories.length ? { categories: { hasEvery: categories } } : {}),
+    ...(categories.length ? { categories: { hasSome: categories } } : {}),
   };
 
   const [products, total] = await Promise.all([
