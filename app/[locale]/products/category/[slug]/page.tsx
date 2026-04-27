@@ -3,6 +3,7 @@ import ProductList from "@/app/products/ProductList";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getCategoryOptions } from "@/lib/product-categories";
 import { getProductCards } from "@/lib/product-list";
+import { getLocaleAlternates } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +33,7 @@ export async function generateMetadata({ params }: PageProps) {
       normalizedLocale === "bg"
         ? `Категория ${category.label} с актуални цени.`
         : `Category ${category.label} with current prices.`,
-    alternates: {
-      canonical: `/${normalizedLocale}/products/category/${slug}`,
-    },
+    alternates: getLocaleAlternates(`/products/category/${slug}`, normalizedLocale),
   };
 }
 
@@ -59,7 +58,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
   });
 
   return (
-    <main className="page-shell">
+    <main className="page-shell" suppressHydrationWarning>
       <div className="container">
         <h1>{category.label}</h1>
         <p className="pill" style={{ marginTop: 12 }}>

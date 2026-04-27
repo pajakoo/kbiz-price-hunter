@@ -7,35 +7,57 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const productId = searchParams.get("productId")?.trim() ?? "";
   const productSlug = searchParams.get("productSlug")?.trim() ?? "";
+  const canonicalKey = searchParams.get("canonicalKey")?.trim() ?? "";
   const maxPointsParam = Number.parseInt(searchParams.get("maxPoints") ?? "", 10);
   const maxPoints = Number.isFinite(maxPointsParam) && maxPointsParam > 0
     ? Math.min(maxPointsParam, 2000)
     : 1000;
 
-  if (!productId && !productSlug) {
+  if (!productId && !productSlug && !canonicalKey) {
     return NextResponse.json(
-      { ok: false, error: "productId or productSlug query param is required." },
+      { ok: false, error: "productId, productSlug, or canonicalKey query param is required." },
       { status: 400 }
     );
   }
 
   const product = productId
     ? await prisma.product.findUnique({ where: { id: productId } })
-    : await prisma.product.findUnique({ where: { slug: productSlug } });
+    : productSlug
+      ? await prisma.product.findUnique({ where: { slug: productSlug } })
+      : null;
 
-  if (!product) {
+  const canonicalProducts = canonicalKey
+    ? await prisma.product.findMany({
+        where: { canonicalKey },
+        select: { id: true, slug: true, name: true },
+      })
+    : [];
+
+  if (!product && canonicalKey && canonicalProducts.length === 0) {
+    return NextResponse.json({ ok: false, error: "Canonical key not found." }, { status: 404 });
+  }
+
+  if (!product && !canonicalKey) {
     return NextResponse.json({ ok: false, error: "Product not found." }, { status: 404 });
   }
 
+  const productIds = canonicalKey
+    ? canonicalProducts.map((entry) => entry.id)
+    : product
+      ? [product.id]
+      : [];
+
   const prices = await prisma.price.findMany({
-    where: { productId: product.id },
+    where: { productId: { in: productIds } },
     orderBy: { recordedAt: "desc" },
     take: maxPoints,
-    select: {
-      amount: true,
-      recordedAt: true,
-      storeId: true,
-      source: true,
+      select: {
+        amount: true,
+        recordedAt: true,
+        storeId: true,
+        source: true,
+        isPromo: true,
+
       store: {
         select: { name: true, city: true },
       },
@@ -49,7 +71,7 @@ export async function GET(request: Request) {
         store: string;
         city: string | null;
         source?: string | null;
-        points: { date: string; price: number }[];
+        points: { date: string; price: number; isPromo?: boolean }[];
       }
     >
   >((acc, price) => {
@@ -65,6 +87,7 @@ export async function GET(request: Request) {
     acc[key].points.push({
       date: price.recordedAt.toISOString().slice(0, 10),
       price: price.amount,
+      isPromo: price.isPromo ?? false,
     });
     return acc;
   }, {});
@@ -74,9 +97,15 @@ export async function GET(request: Request) {
     points: entry.points.sort((a, b) => a.date.localeCompare(b.date)),
   }));
 
+  const responseProduct = product ?? canonicalProducts[0] ?? null;
+
   return NextResponse.json({
     ok: true,
-    product: { id: product.id, slug: product.slug, name: product.name },
+    product: responseProduct
+      ? { id: responseProduct.id, slug: responseProduct.slug, name: responseProduct.name }
+      : null,
+    canonicalKey: canonicalKey || null,
+    productCount: canonicalKey ? productIds.length : 1,
     series: seriesValues,
   });
 }
@@ -93,6 +122,7 @@ export async function POST(request: Request) {
   const storeId = typeof body?.storeId === "string" ? body.storeId.trim() : "";
   const amount = typeof body?.amount === "number" ? body.amount : Number(body?.amount);
   const currency = typeof body?.currency === "string" ? body.currency.trim() : "EUR";
+  const isPromo = typeof body?.isPromo === "boolean" ? body.isPromo : false;
 
   if ((!productId && !productSlug) || !storeId || Number.isNaN(amount)) {
     return NextResponse.json(
@@ -115,13 +145,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Store not found." }, { status: 404 });
     }
 
-    const price = await prisma.price.create({
-      data: {
-        amount,
-        currency: currency || "EUR",
-        productId: product.id,
-        storeId: store.id,
-      },
+      const price = await prisma.price.create({
+        data: {
+          amount,
+          currency: currency || "EUR",
+          productId: product.id,
+          storeId: store.id,
+          isPromo,
+        },
+
       include: {
         product: true,
         store: true,

@@ -24,6 +24,17 @@ private behind magic-link auth (to be wired next).
 - Backfill product categories (login required): `POST /api/seed/categories`.
 - Normalize store cities from store names (login required): `POST /api/seed/cities`.
 
+## Bulk CSV import (fast)
+1) Install deps:
+```
+npm install
+```
+2) Run the bulk import (path can be a file or folder of CSVs):
+```
+npm run import:csv -- --path ./data --date 2026-03-11
+```
+3) The script loads all rows via Postgres `COPY`, then upserts stores/products and inserts prices.
+
 ## Getting started
 ```bash
 npm install
@@ -35,6 +46,7 @@ npm run dev
 - Set up Postgres and run `npx prisma migrate dev`.
 - Implement magic-link auth (email provider + token validation).
 - Replace demo products with live data ingestion.
+- See `docs/canonical-key.md` for canonical-key deduplication notes.
 
 ## Local setup (step-by-step)
 1) Install Postgres 16 (Homebrew):

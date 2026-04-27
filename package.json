@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "import:csv": "ts-node --files --compiler-options '{\"module\":\"CommonJS\"}' scripts/bulk-import-csv.ts",
+    "backfill:canonical-key": "ts-node --files --compiler-options '{\"module\":\"CommonJS\"}' scripts/backfill-canonical-key.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
@@ -22,10 +24,15 @@
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.6",
     "@types/node": "^20",
+    "@types/pg": "^8.15.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
+    "dotenv": "^16.4.5",
     "eslint-config-next": "16.1.4",
+    "pg": "^8.16.0",
+    "pg-copy-streams": "^7.0.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

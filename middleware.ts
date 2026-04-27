@@ -20,7 +20,14 @@ export function middleware(request: NextRequest) {
 
   const pathnameLocale = pathname.split("/")[1];
   if (locales.includes(pathnameLocale as (typeof locales)[number])) {
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", pathname);
+    requestHeaders.set("x-locale", pathnameLocale);
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   const redirectUrl = request.nextUrl.clone();

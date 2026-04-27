@@ -76,18 +76,26 @@ export default function ProductPriceChart({ slug, currencyLabel }: Props) {
     ).sort();
 
     const colors = ["#3b6df6", "#1f3b2c", "#9a6df7"];
+    const promoColor = "#f59e0b";
 
-    const datasets = series.map((item, index) => ({
-      label: item.store,
-      data: labels.map((label) => {
-        const point = item.points.find((p) => p.date === label);
-        return point ? point.price : null;
-      }),
-      borderColor: colors[index % colors.length],
-      backgroundColor: "rgba(59, 109, 246, 0.15)",
-      spanGaps: true,
-      tension: 0.3,
-    }));
+    const datasets = series.map((item, index) => {
+      const pointLookup = new Map(item.points.map((point) => [point.date, point]));
+      const data = labels.map((label) => pointLookup.get(label)?.price ?? null);
+      const promoFlags = labels.map((label) => pointLookup.get(label)?.isPromo ?? false);
+
+      return {
+        label: item.store,
+        data,
+        borderColor: colors[index % colors.length],
+        backgroundColor: "rgba(59, 109, 246, 0.15)",
+        spanGaps: true,
+        tension: 0.3,
+        pointStyle: promoFlags.map((flag) => (flag ? "triangle" : "circle")),
+        pointRadius: promoFlags.map((flag) => (flag ? 6 : 3)),
+        pointBackgroundColor: promoFlags.map((flag) => (flag ? promoColor : colors[index % colors.length])),
+        pointBorderColor: promoFlags.map((flag) => (flag ? promoColor : colors[index % colors.length])),
+      };
+    });
 
     return { labels, datasets };
   }, [series]);

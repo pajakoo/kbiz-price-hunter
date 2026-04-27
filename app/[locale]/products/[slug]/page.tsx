@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getLocalizedProduct, getProduct } from "@/lib/products";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getSession } from "@/lib/auth";
+import { getLocaleAlternates } from "@/lib/seo";
 
 type PageProps = {
   params: Promise<{ slug: string; locale: string }>;
@@ -67,12 +68,17 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: "Product not found | Ловец на цени" };
   }
 
+  const description =
+    product.summary === dict.product.fallbackSummary
+      ? normalizedLocale === "bg"
+        ? `${product.name} - актуални цени и сравнение между магазини.`
+        : `${product.name} with current prices and store comparison.`
+      : product.summary;
+
   return {
     title: `${product.name} | Ловец на цени`,
-    description: product.summary,
-    alternates: {
-      canonical: `/${normalizedLocale}/products/${slug}`,
-    },
+    description,
+    alternates: getLocaleAlternates(`/products/${slug}`, normalizedLocale),
   };
 }
 
@@ -162,7 +168,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   };
 
   return (
-    <main className="page-shell">
+    <main className="page-shell" suppressHydrationWarning>
       <div className="container">
         <script
           type="application/ld+json"
@@ -205,26 +211,26 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               </ul>
             </div>
             <div className="card">
-              <h3>Quick stats</h3>
+              <h3>{dict.product.quickStats}</h3>
               <div className="stats-grid">
                 <div>
-                  <span className="stat-label">Best price</span>
+                  <span className="stat-label">{dict.product.bestPrice}</span>
                   <strong>
                     {bestPrice !== null ? `${currencyFormatter.format(bestPrice)} EUR` : "—"}
                   </strong>
                 </div>
                 <div>
-                  <span className="stat-label">Avg price</span>
+                  <span className="stat-label">{dict.product.avgPrice}</span>
                   <strong>
                     {avgPrice !== null ? `${currencyFormatter.format(avgPrice)} EUR` : "—"}
                   </strong>
                 </div>
                 <div>
-                  <span className="stat-label">Stores tracked</span>
+                  <span className="stat-label">{dict.product.storesTracked}</span>
                   <strong>{storeLatest.size || "—"}</strong>
                 </div>
                 <div>
-                  <span className="stat-label">Last update</span>
+                  <span className="stat-label">{dict.product.lastUpdate}</span>
                   <strong>{lastUpdate ? dateFormatter.format(lastUpdate) : "—"}</strong>
                 </div>
               </div>

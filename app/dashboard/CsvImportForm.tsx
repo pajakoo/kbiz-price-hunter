@@ -10,6 +10,7 @@ type Status = {
 type Props = {
   title: string;
   body: string;
+  usage: string;
   fileLabel: string;
   dateLabel: string;
   dateHelp: string;
@@ -22,6 +23,7 @@ type Props = {
 export default function CsvImportForm({
   title,
   body,
+  usage,
   fileLabel,
   dateLabel,
   dateHelp,
@@ -82,6 +84,7 @@ export default function CsvImportForm({
       <div className="card">
         <h2>{title}</h2>
         <p style={{ marginTop: 8, color: "var(--ink-muted)" }}>{body}</p>
+        <p style={{ marginTop: 4, color: "var(--ink-muted)" }}>{usage}</p>
         <form className="form-shell" onSubmit={handleSubmit} style={{ marginTop: 20 }}>
           <label htmlFor="csv-file">{fileLabel}</label>
           <input id="csv-file" name="file" type="file" accept=".csv" required />

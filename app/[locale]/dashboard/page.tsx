@@ -8,6 +8,7 @@ import CsvImportForm from "@/app/dashboard/CsvImportForm";
 import PriceAlertManager from "@/app/dashboard/PriceAlertManager";
 import { prisma } from "@/lib/prisma";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { getLocaleAlternates } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -20,9 +21,7 @@ export async function generateMetadata({
   return {
     title: "Dashboard | Ловец на цени",
     description: "Private pricing workspace for lists and store comparisons.",
-    alternates: {
-      canonical: `/${normalizedLocale}/dashboard`,
-    },
+    alternates: getLocaleAlternates("/dashboard", normalizedLocale),
   };
 }
 
@@ -48,7 +47,7 @@ export default async function DashboardPage({
 
   const chartProducts = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
-    select: { name: true, slug: true },
+    select: { name: true, slug: true, canonicalKey: true },
   });
 
   const alertProducts = await prisma.product.findMany({
@@ -167,7 +166,7 @@ export default async function DashboardPage({
   );
 
   return (
-    <main className="page-shell">
+    <main className="page-shell" suppressHydrationWarning>
       <div className="container">
         <div className="dashboard-header">
           <div>
@@ -183,6 +182,9 @@ export default async function DashboardPage({
             <Link className="button button--icon" href={`${basePath}/products`}>
               <ShoppingCart size={18} aria-hidden="true" />
               {dict.dashboard.browse}
+            </Link>
+            <Link className="button ghost" href={`${basePath}/canonical`}>
+              {dict.dashboard.canonicalLink}
             </Link>
           </div>
         </div>
@@ -283,6 +285,7 @@ export default async function DashboardPage({
         <CsvImportForm
           title={dict.dashboard.importCsvTitle}
           body={dict.dashboard.importCsvBody}
+          usage={dict.dashboard.importCsvUsage}
           fileLabel={dict.dashboard.importCsvFileLabel}
           dateLabel={dict.dashboard.importCsvDateLabel}
           dateHelp={dict.dashboard.importCsvDateHelp}

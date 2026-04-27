@@ -3,6 +3,7 @@ import { getDictionary, type Locale } from "@/lib/i18n";
 import { getCategoryOptions } from "@/lib/product-categories";
 import { getProductCards } from "@/lib/product-list";
 import { getSession } from "@/lib/auth";
+import { getLocaleAlternates } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -16,9 +17,7 @@ export async function generateMetadata({
   return {
     title: "Product index | Ловец на цени",
     description: dict.products.subtitle,
-    alternates: {
-      canonical: `/${normalizedLocale}/products`,
-    },
+    alternates: getLocaleAlternates("/products", normalizedLocale),
   };
 }
 
@@ -48,7 +47,7 @@ export default async function ProductsPage({
   });
 
   return (
-    <main className="page-shell">
+    <main className="page-shell" suppressHydrationWarning>
       <div className="container">
         <h1>{dict.products.title}</h1>
         <p className="pill" style={{ marginTop: 12 }}>

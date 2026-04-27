@@ -17,6 +17,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip,
 type PricePoint = {
   date: string;
   price: number;
+  isPromo?: boolean;
 };
 
 type StoreSeries = {
@@ -30,6 +31,7 @@ type ChartProduct = {
   key: string;
   label: string;
   slug?: string;
+  canonicalKey?: string | null;
   source: "sample" | "db";
   series: StoreSeries[];
 };
@@ -98,7 +100,7 @@ type Props = {
   currencyLabel: string;
   emptyStateLabel: string;
   loadingLabel: string;
-  extraProducts?: { name: string; slug: string }[];
+  extraProducts?: { name: string; slug: string; canonicalKey?: string | null }[];
 };
 
 export default function PriceChart({
@@ -121,6 +123,7 @@ export default function PriceChart({
         key: item.slug,
         label: item.name,
         slug: item.slug,
+        canonicalKey: item.canonicalKey ?? null,
         source: "db" as const,
         series: [],
       }))
@@ -195,7 +198,11 @@ export default function PriceChart({
     setLoading(true);
     setSeriesOverride(null);
 
-    fetch(`/api/prices?productSlug=${encodeURIComponent(product.slug)}&maxPoints=1000`, {
+    const queryParam = product.canonicalKey
+      ? `canonicalKey=${encodeURIComponent(product.canonicalKey)}`
+      : `productSlug=${encodeURIComponent(product.slug)}`;
+
+    fetch(`/api/prices?${queryParam}&maxPoints=1000`, {
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -293,17 +300,27 @@ export default function PriceChart({
       new Set(filteredSeries.flatMap((series) => series.points.map((point) => point.date)))
     ).sort();
 
-    const datasets = filteredSeries.map((series, index) => ({
-      label: formatStoreLabel(series),
-      data: labels.map((label) => {
-        const point = series.points.find((p) => p.date === label);
-        return point ? point.price : null;
-      }),
-      borderColor: index === 0 ? "#d46627" : "#1f3b2c",
-      backgroundColor: "rgba(212, 102, 39, 0.2)",
-      spanGaps: true,
-      tension: 0.3,
-    }));
+    const colors = ["#d46627", "#1f3b2c", "#3b6df6"];
+    const promoColor = "#f59e0b";
+
+    const datasets = filteredSeries.map((series, index) => {
+      const pointLookup = new Map(series.points.map((point) => [point.date, point]));
+      const dataPoints = labels.map((label) => pointLookup.get(label)?.price ?? null);
+      const promoFlags = labels.map((label) => pointLookup.get(label)?.isPromo ?? false);
+
+      return {
+        label: formatStoreLabel(series),
+        data: dataPoints,
+        borderColor: colors[index % colors.length],
+        backgroundColor: "rgba(212, 102, 39, 0.2)",
+        spanGaps: true,
+        tension: 0.3,
+        pointStyle: promoFlags.map((flag) => (flag ? "triangle" : "circle")),
+        pointRadius: promoFlags.map((flag) => (flag ? 6 : 3)),
+        pointBackgroundColor: promoFlags.map((flag) => (flag ? promoColor : colors[index % colors.length])),
+        pointBorderColor: promoFlags.map((flag) => (flag ? promoColor : colors[index % colors.length])),
+      };
+    });
 
     return { labels, datasets };
   }, [cityFilteredSeries, storeFilter]);

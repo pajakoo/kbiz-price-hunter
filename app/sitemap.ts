@@ -15,16 +15,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     products.map((product) => ({
       url: `${baseUrl}/${locale}/products/${product.slug}`,
       lastModified: product.updatedAt,
+      alternates: {
+        languages: {
+          en: `${baseUrl}/en/products/${product.slug}`,
+          bg: `${baseUrl}/bg/products/${product.slug}`,
+        },
+      },
     }))
   );
 
   const now = new Date();
 
   return [
-    { url: `${baseUrl}/en`, lastModified: now },
-    { url: `${baseUrl}/bg`, lastModified: now },
-    { url: `${baseUrl}/en/products`, lastModified: now },
-    { url: `${baseUrl}/bg/products`, lastModified: now },
+    {
+      url: `${baseUrl}/en`,
+      lastModified: now,
+      alternates: { languages: { en: `${baseUrl}/en`, bg: `${baseUrl}/bg` } },
+    },
+    {
+      url: `${baseUrl}/bg`,
+      lastModified: now,
+      alternates: { languages: { en: `${baseUrl}/en`, bg: `${baseUrl}/bg` } },
+    },
+    {
+      url: `${baseUrl}/en/products`,
+      lastModified: now,
+      alternates: {
+        languages: { en: `${baseUrl}/en/products`, bg: `${baseUrl}/bg/products` },
+      },
+    },
+    {
+      url: `${baseUrl}/bg/products`,
+      lastModified: now,
+      alternates: {
+        languages: { en: `${baseUrl}/en/products`, bg: `${baseUrl}/bg/products` },
+      },
+    },
     ...productEntries,
   ];
 }

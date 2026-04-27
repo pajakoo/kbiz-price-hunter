@@ -5,6 +5,7 @@ import { getProductCategories } from "@/lib/product-categories";
 import { getProductCards } from "@/lib/product-list";
 import { normalizeCity } from "@/lib/city-normalize";
 import { normalizeProductName } from "@/lib/product-normalize";
+import { buildCanonicalKey } from "@/lib/canonical-key";
 import type { Locale } from "@/lib/i18n";
 
 export async function GET(request: Request) {
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
     const normalizedDescription = description ? normalizeProductName(description) : null;
     const categories = getProductCategories(normalizedName, normalizedDescription);
     const normalizedCity = storeCity ? normalizeCity(storeCity, storeName) : null;
+    const canonicalKey = buildCanonicalKey(normalizedName);
 
     const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
@@ -101,6 +103,7 @@ export async function POST(request: Request) {
           name: normalizedName,
           description: normalizedDescription,
           categories,
+          canonicalKey,
         },
       });
 

@@ -6,9 +6,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { getProductCategories } from "@/lib/product-categories";
-import { normalizeCity } from "@/lib/city-normalize";
 import { normalizeProductName } from "@/lib/product-normalize";
+import { normalizeCity } from "@/lib/city-normalize";
 import { slugify } from "@/lib/slugify";
+import { buildCanonicalKey } from "@/lib/canonical-key";
+
 
 const REQUIRED_HEADERS = {
   store: "Търговски обект",
@@ -32,6 +34,7 @@ type CsvRow = {
 type SourceRow = {
   row: CsvRow;
   price: number;
+  isPromo: boolean;
   recordedAt: Date;
   source: string;
 };
@@ -181,10 +184,13 @@ async function processCsvFile(
         continue;
       }
 
-      const priceValue = parsePrice(row.promoPrice || row.retailPrice);
+      const promoAmount = parsePrice(row.promoPrice);
+      const retailAmount = parsePrice(row.retailPrice);
+      const priceValue = promoAmount ?? retailAmount;
       if (priceValue === null || priceValue <= 0) {
         continue;
       }
+      const isPromo = promoAmount !== null && promoAmount > 0;
 
       const normalizedName = normalizeProductName(row.productName);
       const normalizedCity = normalizeCity(row.city, row.store);
@@ -198,7 +204,7 @@ async function processCsvFile(
       bucket.sources.add(source);
       const rowKey = buildRowKey(normalizedRow, recordedAt);
       if (!bucket.rows.has(rowKey)) {
-        bucket.rows.set(rowKey, { row: normalizedRow, price: priceValue, recordedAt, source });
+        bucket.rows.set(rowKey, { row: normalizedRow, price: priceValue, isPromo, recordedAt, source });
       }
     }
   } finally {
@@ -357,18 +363,21 @@ export async function POST(request: Request) {
     const slug = buildSlug(normalizedName);
     const existingProduct = await prisma.product.findUnique({ where: { slug } });
     const categories = getProductCategories(normalizedName, normalizedName);
+    const canonicalKey = buildCanonicalKey(normalizedName);
     const product = await prisma.product.upsert({
       where: { slug },
       update: {
         name: normalizedName,
         description: normalizedName,
         categories,
+        canonicalKey,
       },
       create: {
         slug,
         name: normalizedName,
         description: normalizedName,
         categories,
+        canonicalKey,
       },
     });
 
@@ -413,16 +422,18 @@ export async function POST(request: Request) {
         },
       });
 
-      await prisma.price.create({
-        data: {
-          productId: product.id,
-          storeId: store.id,
-          amount: sourceRow.price,
-          currency: "EUR",
-          recordedAt: sourceRow.recordedAt,
-          source: sourceRow.source,
-        },
-      });
+        await prisma.price.create({
+          data: {
+            productId: product.id,
+            storeId: store.id,
+            amount: sourceRow.price,
+            currency: "EUR",
+            recordedAt: sourceRow.recordedAt,
+            source: sourceRow.source,
+            isPromo: sourceRow.isPromo,
+          },
+        });
+
 
       createdPrices += 1;
     }

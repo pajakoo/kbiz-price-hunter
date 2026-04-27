@@ -31,6 +31,11 @@ type Dictionary = {
     publicTag: string;
     snapshot: string;
     track: string;
+    quickStats: string;
+    bestPrice: string;
+    avgPrice: string;
+    storesTracked: string;
+    lastUpdate: string;
     fallbackSummary: string;
     fallbackPriceNote: string;
     fallbackLastChecked: string;
@@ -93,6 +98,7 @@ type Dictionary = {
     recentProductsEmpty: string;
     importCsvTitle: string;
     importCsvBody: string;
+    importCsvUsage: string;
     importCsvFileLabel: string;
     importCsvDateLabel: string;
     importCsvDateHelp: string;
@@ -100,6 +106,20 @@ type Dictionary = {
     importCsvSubmitting: string;
     importCsvSuccess: string;
     importCsvError: string;
+    canonicalLink: string;
+    canonicalTitle: string;
+    canonicalBody: string;
+    canonicalBack: string;
+    canonicalSearchLabel: string;
+    canonicalSearchPlaceholder: string;
+    canonicalSearchSubmit: string;
+    canonicalEmpty: string;
+    canonicalTableKey: string;
+    canonicalTableCount: string;
+    canonicalTableProducts: string;
+    canonicalExclude: string;
+    canonicalGroupColumn: string;
+    canonicalExcludedColumn: string;
     priceDropsTitle: string;
     priceDropsBody: string;
     priceDropsEmpty: string;
@@ -189,6 +209,11 @@ const dictionary: Record<Locale, Dictionary> = {
       publicTag: "Public product",
       snapshot: "Price snapshot",
       track: "What to track",
+      quickStats: "Quick stats",
+      bestPrice: "Best price",
+      avgPrice: "Avg price",
+      storesTracked: "Stores tracked",
+      lastUpdate: "Last update",
       fallbackSummary: "Compare price ranges, stores, and weekly updates in one place.",
       fallbackPriceNote: "Avg range: 18 - 24 EUR",
       fallbackLastChecked: "Updated today",
@@ -258,14 +283,30 @@ const dictionary: Record<Locale, Dictionary> = {
       recentProductsEmpty: "No products added yet.",
       importCsvTitle: "Import supplier CSV",
       importCsvBody: "Upload the Zlatna Ribka CSV to import products and prices.",
+      importCsvUsage: "Tip: for huge files use the bulk import CLI (npm run import:csv).",
       importCsvFileLabel: "CSV file",
       importCsvDateLabel: "Price date",
       importCsvDateHelp: "All imported prices will use this date.",
       importCsvSubmit: "Import CSV",
       importCsvSubmitting: "Importing...",
-      importCsvSuccess: "Imported data for {name}.",
-      importCsvError: "Unable to import CSV.",
+      importCsvSuccess: "CSV import finished.",
+      importCsvError: "CSV import failed.",
+      canonicalLink: "Canonical groups",
+      canonicalTitle: "Canonical key groups",
+      canonicalBody: "Review products that share a canonical key to spot duplicates.",
+      canonicalBack: "Back to dashboard",
+      canonicalSearchLabel: "Filter by canonical key",
+      canonicalSearchPlaceholder: "e.g. kiselo-mlyako",
+      canonicalSearchSubmit: "Search",
+      canonicalEmpty: "No duplicate canonical keys found.",
+      canonicalTableKey: "Canonical key",
+      canonicalTableCount: "Products",
+      canonicalTableProducts: "Product list",
+      canonicalExclude: "Exclude",
+      canonicalGroupColumn: "Group",
+      canonicalExcludedColumn: "Excluded",
       priceDropsTitle: "Price drops",
+
       priceDropsBody: "Largest recent price reductions by store and product.",
       priceDropsEmpty: "No price drops recorded yet.",
       priceAlertsTitle: "Price alerts",
@@ -352,6 +393,11 @@ const dictionary: Record<Locale, Dictionary> = {
       publicTag: "Публичен продукт",
       snapshot: "Снимка на цените",
       track: "Какво да следим",
+      quickStats: "Бърза статистика",
+      bestPrice: "Най-добра цена",
+      avgPrice: "Средна цена",
+      storesTracked: "Следени магазини",
+      lastUpdate: "Последна актуализация",
       fallbackSummary: "Сравнявай диапазони, магазини и седмични актуализации на едно място.",
       fallbackPriceNote: "Среден диапазон: 18 - 24 EUR",
       fallbackLastChecked: "Обновено днес",
@@ -421,6 +467,7 @@ const dictionary: Record<Locale, Dictionary> = {
       recentProductsEmpty: "Все още няма добавени продукти.",
       importCsvTitle: "Импорт на CSV",
       importCsvBody: "Качи CSV файла от Златна Рибка, за да внесеш продукти и цени.",
+      importCsvUsage: "Съвет: за огромни файлове използвай CLI импорта (npm run import:csv).",
       importCsvFileLabel: "CSV файл",
       importCsvDateLabel: "Дата на цената",
       importCsvDateHelp: "Всички цени ще се запишат с тази дата.",
@@ -428,6 +475,20 @@ const dictionary: Record<Locale, Dictionary> = {
       importCsvSubmitting: "Импортиране...",
       importCsvSuccess: "Импортирани данни за {name}.",
       importCsvError: "CSV файлът не можа да се импортира.",
+      canonicalLink: "Канонични групи",
+      canonicalTitle: "Канонични групи",
+      canonicalBody: "Прегледай продукти със същия каноничен ключ за дубликати.",
+      canonicalBack: "Назад към таблото",
+      canonicalSearchLabel: "Филтър по каноничен ключ",
+      canonicalSearchPlaceholder: "напр. kiselo-mlyako",
+      canonicalSearchSubmit: "Търси",
+      canonicalEmpty: "Няма открити дубликати по каноничен ключ.",
+      canonicalTableKey: "Каноничен ключ",
+      canonicalTableCount: "Продукти",
+      canonicalTableProducts: "Списък",
+      canonicalExclude: "Изключи",
+      canonicalGroupColumn: "Група",
+      canonicalExcludedColumn: "Изключени",
       priceDropsTitle: "Намаления на цени",
       priceDropsBody: "Най-големите намаления по магазин и продукт.",
       priceDropsEmpty: "Все още няма регистрирани намаления.",

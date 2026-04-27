@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { getLocaleAlternates } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -13,9 +14,7 @@ export async function generateMetadata({
   return {
     title: "Ловец на цени",
     description: dict.home.intro,
-    alternates: {
-      canonical: `/${normalizedLocale}`,
-    },
+    alternates: getLocaleAlternates("", normalizedLocale),
   };
 }
 

@@ -1,6 +1,7 @@
 export type PricePoint = {
   date: string;
   price: number;
+  isPromo?: boolean;
 };
 
 export type StoreSeries = {
@@ -14,7 +15,7 @@ const productHistory: Record<string, StoreSeries[]> = {
       store: "Fresh Mart",
       points: [
         { date: "2024-10-01", price: 10.2 },
-        { date: "2024-10-15", price: 9.7 },
+        { date: "2024-10-15", price: 9.7, isPromo: true },
         { date: "2024-11-01", price: 9.4 },
       ],
     },

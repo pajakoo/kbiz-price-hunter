@@ -1,5 +1,6 @@
 import LoginForm from "@/app/login/LoginForm";
 import { getDictionary, type Locale } from "@/lib/i18n";
+import { getLocaleAlternates } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -13,9 +14,7 @@ export async function generateMetadata({
   return {
     title: "Request access | Ловец на цени",
     description: dict.login.intro,
-    alternates: {
-      canonical: `/${normalizedLocale}/login`,
-    },
+    alternates: getLocaleAlternates("/login", normalizedLocale),
   };
 }
 
@@ -29,7 +28,7 @@ export default async function LoginPage({
   const dict = getDictionary(normalizedLocale);
 
   return (
-    <main className="page-shell">
+    <main className="page-shell" suppressHydrationWarning>
       <div className="container">
         <h1>{dict.login.title}</h1>
         <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>
