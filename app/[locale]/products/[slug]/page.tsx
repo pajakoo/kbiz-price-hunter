@@ -157,13 +157,17 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `https://pricehunter.app/${normalizedLocale}/products/${slug}#product`,
+    url: `https://pricehunter.app/${normalizedLocale}/products/${slug}`,
     name: product.name,
     description: product.summary,
     offers: {
       "@type": "AggregateOffer",
+      url: `https://pricehunter.app/${normalizedLocale}/products/${slug}`,
       priceCurrency: "EUR",
       lowPrice: bestPrice !== null ? bestPrice.toFixed(2) : "9.00",
       highPrice: Number.isFinite(maxPrice) ? maxPrice.toFixed(2) : "24.00",
+      offerCount: String(storeLatest.size || 1),
     },
   };
 
