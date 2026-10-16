@@ -1,20 +1,20 @@
 import type { MetadataRoute } from "next";
 import { locales } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
+import { CATEGORY_OPTIONS } from "@/lib/product-categories";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://kbiz-price-hunter.example";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await prisma.product.findMany({
-    select: { slug: true, updatedAt: true },
+    select: { slug: true, categories: true },
     orderBy: { updatedAt: "desc" },
   });
 
   const productEntries = locales.flatMap((locale) =>
     products.map((product) => ({
       url: `${baseUrl}/${locale}/products/${product.slug}`,
-      lastModified: product.updatedAt,
       alternates: {
         languages: {
           en: `${baseUrl}/en/products/${product.slug}`,
@@ -24,33 +24,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
   );
 
-  const now = new Date();
+  const categoryEntries = CATEGORY_OPTIONS
+    .filter((category) => products.some((product) => product.categories.includes(category.slug)))
+    .flatMap((category) => locales.map((locale) => ({
+      url: `${baseUrl}/${locale}/products/category/${category.slug}`,
+      alternates: {
+        languages: {
+          en: `${baseUrl}/en/products/category/${category.slug}`,
+          bg: `${baseUrl}/bg/products/category/${category.slug}`,
+        },
+      },
+    })));
 
   return [
     {
       url: `${baseUrl}/en`,
-      lastModified: now,
       alternates: { languages: { en: `${baseUrl}/en`, bg: `${baseUrl}/bg` } },
     },
     {
       url: `${baseUrl}/bg`,
-      lastModified: now,
       alternates: { languages: { en: `${baseUrl}/en`, bg: `${baseUrl}/bg` } },
     },
     {
       url: `${baseUrl}/en/products`,
-      lastModified: now,
       alternates: {
         languages: { en: `${baseUrl}/en/products`, bg: `${baseUrl}/bg/products` },
       },
     },
     {
       url: `${baseUrl}/bg/products`,
-      lastModified: now,
       alternates: {
         languages: { en: `${baseUrl}/en/products`, bg: `${baseUrl}/bg/products` },
       },
     },
+    ...categoryEntries,
     ...productEntries,
   ];
 }

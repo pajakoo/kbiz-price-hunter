@@ -8,10 +8,15 @@ import { getLocalizedProduct, getProduct } from "@/lib/products";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getSession } from "@/lib/auth";
 import { getLocaleAlternates } from "@/lib/seo";
+import { getCategoryOptions } from "@/lib/product-categories";
+import { latestStorePrices } from "@/lib/latest-store-prices";
+import YogurtProfile, { yogurtSlug, yogurtDescription } from "@/app/products/YogurtProfile";
+
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kbiz-price-hunter.example";
 
 type PageProps = {
   params: Promise<{ slug: string; locale: string }>;
-  searchParams?: Promise<{ sort?: string }>;
+  searchParams?: Promise<{ sort?: string; city?: string }>;
 };
 
 export const dynamic = "force-dynamic";
@@ -23,6 +28,7 @@ type DisplayProduct = {
   priceNote: string;
   lastChecked: string;
   highlights: string[];
+  categories: string[];
   productId?: string;
 };
 
@@ -40,6 +46,7 @@ async function getDisplayProduct(
       priceNote: dict.product.fallbackPriceNote,
       lastChecked: dict.product.fallbackLastChecked,
       highlights: dict.product.fallbackHighlights,
+      categories: dbProduct.categories,
       productId: dbProduct.id,
     };
   }
@@ -56,6 +63,7 @@ async function getDisplayProduct(
     priceNote: localized.priceNote,
     lastChecked: localized.lastChecked,
     highlights: localized.highlights,
+    categories: [],
   };
 }
 
@@ -68,7 +76,7 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: "Product not found | Ловец на цени" };
   }
 
-  const description =
+  const description = slug === yogurtSlug ? yogurtDescription(normalizedLocale === "bg") :
     product.summary === dict.product.fallbackSummary
       ? normalizedLocale === "bg"
         ? `${product.name} - актуални цени и сравнение между магазини.`
@@ -76,7 +84,7 @@ export async function generateMetadata({ params }: PageProps) {
       : product.summary;
 
   return {
-    title: `${product.name} | Ловец на цени`,
+    title: `${product.name}${slug === yogurtSlug ? (normalizedLocale === "bg" ? " – състав, магазини и цени" : " – ingredients, stores and prices") : ""} | Ловец на цени`,
     description,
     alternates: getLocaleAlternates(`/products/${slug}`, normalizedLocale),
   };
@@ -89,6 +97,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const basePath = `/${normalizedLocale}`;
   const sortParam = (await searchParams)?.sort ?? "price-asc";
   const sortKey = sortParam === "price-desc" ? "price-desc" : "price-asc";
+  const city = (await searchParams)?.city ?? "";
+  const bg = normalizedLocale === "bg";
+  const hasProfile = slug === yogurtSlug;
   const product = await getDisplayProduct(slug, normalizedLocale, dict);
   if (!product) {
     notFound();
@@ -125,50 +136,69 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   let minPrice = Number.POSITIVE_INFINITY;
   let maxPrice = Number.NEGATIVE_INFINITY;
   let totalPrice = 0;
-  const storeLatest = new Map<string, (typeof priceSnapshots)[number]>();
+  const storeLatest = latestStorePrices(priceSnapshots);
 
-  priceSnapshots.forEach((price) => {
+  storeLatest.forEach((price) => {
     minPrice = Math.min(minPrice, price.amount);
     maxPrice = Math.max(maxPrice, price.amount);
     totalPrice += price.amount;
-    if (!storeLatest.has(price.storeId)) {
-      storeLatest.set(price.storeId, price);
-    }
   });
 
   const bestPrice = Number.isFinite(minPrice) ? minPrice : null;
-  const avgPrice = priceSnapshots.length ? totalPrice / priceSnapshots.length : null;
+  const avgPrice = storeLatest.size ? totalPrice / storeLatest.size : null;
   const lastUpdate = priceSnapshots[0]?.recordedAt ?? null;
   const priceNote =
     bestPrice !== null && Number.isFinite(maxPrice)
       ? `${rangeLabel}: ${currencyFormatter.format(bestPrice)} - ${currencyFormatter.format(
           maxPrice
         )} EUR`
-      : product.priceNote;
+      : dict.product.noPrices;
   const lastChecked = lastUpdate
     ? `${updatedLabel} ${dateFormatter.format(lastUpdate)}`
-    : product.lastChecked;
+    : "—";
   const sortLowLabel = normalizedLocale === "bg" ? "Най-ниска цена" : "Lowest price";
   const sortHighLabel = normalizedLocale === "bg" ? "Най-висока цена" : "Highest price";
   const sortedStorePrices = Array.from(storeLatest.values()).sort((left, right) =>
     sortKey === "price-desc" ? right.amount - left.amount : left.amount - right.amount
   );
+  const cheapestStore = sortedStorePrices.find((price) => price.amount === minPrice) ?? null;
+  const cities = [...new Set(sortedStorePrices.map((price) => price.store.city).filter((value): value is string => Boolean(value)))].sort();
+  const visibleStorePrices = city ? sortedStorePrices.filter((price) => price.store.city === city) : sortedStorePrices;
+  const priciestStore = sortedStorePrices.find((price) => price.amount === maxPrice) ?? null;
+  const categoryLabels = getCategoryOptions()
+    .filter((category) => product.categories.includes(category.slug))
+    .map((category) => category.label);
+  const overviewTitle = normalizedLocale === "bg" ? "Преглед на продукта" : "Product overview";
+  const marketTitle = normalizedLocale === "bg" ? "Пазарна снимка" : "Market snapshot";
+  const categoryTitle = normalizedLocale === "bg" ? "Категории" : "Categories";
+  const cheapestLabel = normalizedLocale === "bg" ? "Най-ниска последно отчетена цена" : "Lowest latest recorded price";
+  const highestLabel = normalizedLocale === "bg" ? "Най-висока последно отчетена цена" : "Highest latest recorded price";
+  const coverageLabel = normalizedLocale === "bg" ? "Покритие" : "Coverage";
+  const noCategoryLabel = normalizedLocale === "bg" ? "Неопределени" : "Unassigned";
+  const overviewText =
+    bestPrice !== null && lastUpdate
+      ? normalizedLocale === "bg"
+        ? `${product.name} в момента се следи в ${storeLatest.size} магазина. Най-ниската отчетена цена е ${currencyFormatter.format(bestPrice)} EUR, а най-високата е ${currencyFormatter.format(maxPrice)} EUR към ${dateFormatter.format(lastUpdate)}.`
+        : `${product.name} is currently tracked across ${storeLatest.size} stores. The lowest observed price is ${currencyFormatter.format(bestPrice)} EUR and the highest is ${currencyFormatter.format(maxPrice)} EUR as of ${dateFormatter.format(lastUpdate)}.`
+      : product.summary;
+  const marketText =
+    cheapestStore && priciestStore
+      ? normalizedLocale === "bg"
+        ? `Сред последните записи по магазин най-ниската цена е в ${cheapestStore.store.name} на ${currencyFormatter.format(cheapestStore.amount)} EUR, а най-високата е в ${priciestStore.store.name} на ${currencyFormatter.format(priciestStore.amount)} EUR. Проверете датата на всеки запис; наличността не е потвърдена.`
+        : `Among the latest records per store, the lowest price is at ${cheapestStore.store.name} for ${currencyFormatter.format(cheapestStore.amount)} EUR and the highest is at ${priciestStore.store.name} for ${currencyFormatter.format(priciestStore.amount)} EUR. Check each observation date; availability is not confirmed.`
+      : normalizedLocale === "bg"
+        ? "Ще покажем сравнение по магазини веднага щом има повече ценови данни."
+        : "Store-level comparisons will appear here as more price observations are collected.";
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
-    "@id": `https://pricehunter.app/${normalizedLocale}/products/${slug}#product`,
-    url: `https://pricehunter.app/${normalizedLocale}/products/${slug}`,
+    "@id": `${baseUrl}/${normalizedLocale}/products/${slug}#product`,
+    url: `${baseUrl}/${normalizedLocale}/products/${slug}`,
     name: product.name,
-    description: product.summary,
-    offers: {
-      "@type": "AggregateOffer",
-      url: `https://pricehunter.app/${normalizedLocale}/products/${slug}`,
-      priceCurrency: "EUR",
-      lowPrice: bestPrice !== null ? bestPrice.toFixed(2) : "9.00",
-      highPrice: Number.isFinite(maxPrice) ? maxPrice.toFixed(2) : "24.00",
-      offerCount: String(storeLatest.size || 1),
-    },
+    description: hasProfile ? yogurtDescription(bg) : product.summary,
+    ...(hasProfile ? { brand: { "@type": "Brand", name: "Боженци" }, weight: { "@type": "QuantitativeValue", value: 400, unitCode: "GRM" } } : {}),
+    // Recorded prices have no verified offer validity; retain Product metadata only.
   };
 
   return (
@@ -183,11 +213,41 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           <div>
             <h1 style={{ marginTop: 16 }}>{product.name}</h1>
             <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>
-              {product.summary}
+              {hasProfile ? yogurtDescription(bg) : overviewText}
             </p>
           </div>
-          <div className="product-hero-image" aria-hidden="true" />
+          {!hasProfile && <div className="product-hero-image" aria-hidden="true" />}
         </div>
+
+        {hasProfile && <>
+          <nav aria-label={bg ? "Навигация в каталога" : "Catalog navigation"} className="table-actions">
+            <Link href={`${basePath}/products`}>{bg ? "Всички продукти" : "All products"}</Link>
+            <Link href={`${basePath}/products/category/hrani`}>{bg ? "Храни" : "Food"}</Link>
+            <a href="#store-comparison">{bg ? "Магазини и записани цени ↓" : "Stores and recorded prices ↓"}</a>
+            <a href="#price-history">{bg ? "История на цените ↓" : "Price history ↓"}</a>
+          </nav>
+          <YogurtProfile bg={bg} />
+        </>}
+
+        {!hasProfile && <section className="section">
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            <div className="card">
+              <h2 style={{ marginTop: 0 }}>{overviewTitle}</h2>
+              <p>{product.summary}</p>
+            </div>
+            <div className="card">
+              <h2 style={{ marginTop: 0 }}>{marketTitle}</h2>
+              <p>{marketText}</p>
+            </div>
+            <div className="card">
+              <h2 style={{ marginTop: 0 }}>{categoryTitle}</h2>
+              <p>{categoryLabels.length ? categoryLabels.join(", ") : noCategoryLabel}</p>
+              <p style={{ color: "var(--ink-muted)" }}>
+                {coverageLabel}: {storeLatest.size || 0} {normalizedLocale === "bg" ? "магазина" : "stores"}
+              </p>
+            </div>
+          </div>
+        </section>}
 
         <section className="section">
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
@@ -206,19 +266,19 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 />
               ) : null}
             </div>
-            <div className="card">
+            {!hasProfile && <div className="card">
               <h3>{dict.product.track}</h3>
               <ul style={{ marginTop: 12, paddingLeft: 18, color: "var(--ink-muted)" }}>
                 {product.highlights.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
-            </div>
+            </div>}
             <div className="card">
               <h3>{dict.product.quickStats}</h3>
               <div className="stats-grid">
                 <div>
-                  <span className="stat-label">{dict.product.bestPrice}</span>
+                  <span className="stat-label">{cheapestLabel}</span>
                   <strong>
                     {bestPrice !== null ? `${currencyFormatter.format(bestPrice)} EUR` : "—"}
                   </strong>
@@ -236,6 +296,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 <div>
                   <span className="stat-label">{dict.product.lastUpdate}</span>
                   <strong>{lastUpdate ? dateFormatter.format(lastUpdate) : "—"}</strong>
+                </div>
+                <div>
+                  <span className="stat-label">{highestLabel}</span>
+                  <strong>
+                    {Number.isFinite(maxPrice) ? `${currencyFormatter.format(maxPrice)} EUR` : "—"}
+                  </strong>
                 </div>
               </div>
             </div>
@@ -258,21 +324,32 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             errorLabel={dict.product.alertError}
           />
         ) : null}
-        <section className="section">
-          <h2>Price history</h2>
+        <section className="section" id="price-history">
+          <h2>{bg ? "История на цените" : "Price history"}</h2>
           <div className="card">
-            <ProductPriceChart slug={slug} currencyLabel="EUR" />
+            {priceSnapshots.length ? <ProductPriceChart slug={slug} currencyLabel="EUR" /> : <p>{dict.product.noPrices}</p>}
           </div>
         </section>
 
-        <section className="section">
-          <h2>Store comparison</h2>
+        <section className="section" id="store-comparison">
+          <h2>{bg ? "Къде е отчетен този продукт" : "Where this product was recorded"}</h2>
+          <p>{bg ? "Магазини от нашите ценови записи. Датата е за конкретното наблюдение; тя не потвърждава наличност или днешна цена." : "Stores from our price records. Each date refers to an observation, not confirmed availability or today’s price."}</p>
+          <p>{bg ? `Показани обекти: ${visibleStorePrices.length} от ${storeLatest.size}.` : `Showing ${visibleStorePrices.length} of ${storeLatest.size} locations.`}</p>
+          <form method="get" action={`${basePath}/products/${slug}#store-comparison`} className="table-actions">
+            <input type="hidden" name="sort" value={sortKey} />
+            <label htmlFor="store-city">{bg ? "Град " : "City "}</label>
+            <select id="store-city" name="city" defaultValue={city}>
+              <option value="">{bg ? "Всички градове" : "All cities"}</option>
+              {cities.map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
+            <button type="submit" className="button ghost">{bg ? "Покажи" : "Show"}</button>
+          </form>
           <div className="table-actions">
             <Link
               className={
                 sortKey === "price-asc" ? "filter-chip filter-chip--active" : "filter-chip"
               }
-              href={`${basePath}/products/${slug}?sort=price-asc`}
+              href={`${basePath}/products/${slug}?${new URLSearchParams({ sort: "price-asc", ...(city ? { city } : {}) })}#store-comparison`}
             >
               {sortLowLabel}
             </Link>
@@ -280,7 +357,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               className={
                 sortKey === "price-desc" ? "filter-chip filter-chip--active" : "filter-chip"
               }
-              href={`${basePath}/products/${slug}?sort=price-desc`}
+              href={`${basePath}/products/${slug}?${new URLSearchParams({ sort: "price-desc", ...(city ? { city } : {}) })}#store-comparison`}
             >
               {sortHighLabel}
             </Link>
@@ -289,25 +366,25 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             <table className="price-table">
               <thead>
                 <tr>
-                  <th>Store</th>
-                  <th>Package</th>
-                  <th>Price</th>
-                  <th>Updated</th>
+                  <th>{bg ? "Магазин / адрес" : "Store / address"}</th>
+                  <th>{bg ? "Град" : "City"}</th>
+                  <th>{hasProfile ? (bg ? "Цена за 400 г / кг" : "Price per 400 g / kg") : (bg ? "Цена" : "Price")}</th>
+                  <th>{bg ? "Отчетено на" : "Observed on"}</th>
                 </tr>
               </thead>
               <tbody>
-                {storeLatest.size ? (
-                  sortedStorePrices.map((price) => (
+                {visibleStorePrices.length ? (
+                  visibleStorePrices.map((price) => (
                     <tr key={price.id}>
                       <td>{price.store.name}</td>
-                      <td>—</td>
-                      <td>{currencyFormatter.format(price.amount)} EUR</td>
+                      <td>{price.store.city || (bg ? "Неуточнен" : "Unspecified")}</td>
+                      <td>{currencyFormatter.format(price.amount)} EUR{hasProfile && <small style={{ display: "block" }}>{currencyFormatter.format(price.amount / 0.4)} EUR/kg</small>}</td>
                       <td>{dateFormatter.format(price.recordedAt)}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4}>{dict.product.noPrices}</td>
+                     <td colSpan={4}>{city ? (bg ? "Няма записани цени за избрания град. Изберете „Всички градове“." : "No recorded prices for this city. Select All cities.") : dict.product.noPrices}</td>
                   </tr>
                 )}
               </tbody>

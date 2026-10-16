@@ -105,6 +105,8 @@ Open http://localhost:3000/en
 4) Build command: `npm run build` (already in `netlify.toml`).
 5) Deploy. Netlify will use `@netlify/plugin-nextjs` for SSR.
 
+> Local note (verified 2026-10-15): this machine runs postgresql@14 (not 16) — `brew services start postgresql@14`, database `kbiz_price_hunter`. Keep the local DB as `.env`'s `DATABASE_URL` and the Supabase production URL under `DATABASE_URL_SUPABASE`. See `projects/price-hunter/library/notes.md` for the full local recipe.
+
 ## Deployment checklist
 - Update the Netlify badge with your site ID + name.
 - Set `NEXT_PUBLIC_SITE_URL` to your production domain.
