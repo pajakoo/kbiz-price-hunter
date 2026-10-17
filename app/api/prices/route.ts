@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { handlePriceDropAlert } from "@/lib/price-alerts";
+import { getStapleProduct } from "@/lib/staple-profiles";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const productId = searchParams.get("productId")?.trim() ?? "";
   const productSlug = searchParams.get("productSlug")?.trim() ?? "";
   const canonicalKey = searchParams.get("canonicalKey")?.trim() ?? "";
+  const city = searchParams.get("city")?.trim() ?? "";
   const maxPointsParam = Number.parseInt(searchParams.get("maxPoints") ?? "", 10);
   const maxPoints = Number.isFinite(maxPointsParam) && maxPointsParam > 0
     ? Math.min(maxPointsParam, 2000)
@@ -47,9 +49,13 @@ export async function GET(request: Request) {
       ? [product.id]
       : [];
 
+  const curated = Boolean(product && getStapleProduct(product.slug)) && !canonicalKey;
+  const eligibleWhere = { productId: { in: productIds }, ...(city ? { store: { city } } : {}) };
+  const chartStores = curated ? await prisma.price.groupBy({ by: ["storeId"], where: eligibleWhere,
+    _count: { id: true }, orderBy: [{ _count: { id: "desc" } }, { storeId: "asc" }], take: 10 }) : [];
   const prices = await prisma.price.findMany({
-    where: { productId: { in: productIds } },
-    orderBy: { recordedAt: "desc" },
+    where: { ...eligibleWhere, ...(curated ? { storeId: { in: chartStores.map(s => s.storeId) } } : {}) },
+    orderBy: [{ recordedAt: "desc" }, { id: "asc" }],
     take: maxPoints,
       select: {
         amount: true,
@@ -106,6 +112,7 @@ export async function GET(request: Request) {
       : null,
     canonicalKey: canonicalKey || null,
     productCount: canonicalKey ? productIds.length : 1,
+    chartSelection: curated ? "Up to 10 stores with the most observations; all stores are listed in the comparison table." : null,
     series: seriesValues,
   });
 }

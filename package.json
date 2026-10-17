@@ -9,6 +9,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "import:csv": "ts-node --files --compiler-options '{\"module\":\"CommonJS\"}' scripts/bulk-import-csv.ts",
+    "import:staples": "ts-node --files --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/import-staple-prices.ts",
     "backfill:canonical-key": "ts-node --files --compiler-options '{\"module\":\"CommonJS\"}' scripts/backfill-canonical-key.ts"
   },
   "dependencies": {

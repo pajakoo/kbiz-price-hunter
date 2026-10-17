@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { locales } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 import { CATEGORY_OPTIONS } from "@/lib/product-categories";
+import { stapleProducts } from "@/lib/staple-profiles";
 
 const baseUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://kbiz-price-hunter.example";
@@ -11,6 +12,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     select: { slug: true, categories: true },
     orderBy: { updatedAt: "desc" },
   });
+  for (const profile of stapleProducts) {
+    if (!products.some(product => product.slug === profile.slug)) products.push({ slug: profile.slug, categories: ["hrani"] });
+  }
 
   const productEntries = locales.flatMap((locale) =>
     products.map((product) => ({
@@ -58,6 +62,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
     },
     ...categoryEntries,
+    ...locales.map(locale => ({ url: `${baseUrl}/${locale}/products/staples`,
+      alternates: { languages: { en: `${baseUrl}/en/products/staples`, bg: `${baseUrl}/bg/products/staples` } } })),
     ...productEntries,
   ];
 }

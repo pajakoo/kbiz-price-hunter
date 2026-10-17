@@ -1,4 +1,5 @@
 import ProductList from "@/app/products/ProductList";
+import Link from "next/link";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getCategoryOptions } from "@/lib/product-categories";
 import { getProductCards } from "@/lib/product-list";
@@ -50,6 +51,7 @@ export default async function ProductsPage({
     <main className="page-shell" suppressHydrationWarning>
       <div className="container">
         <h1>{dict.products.title}</h1>
+        <p><Link href={`${basePath}/products/staples`}>{normalizedLocale === "bg" ? "Основни продукти: състав, магазини и история на цените →" : "Everyday staples: product facts, stores and price history →"}</Link></p>
         <p className="pill" style={{ marginTop: 12 }}>
           {dict.products.subtitle}
         </p>

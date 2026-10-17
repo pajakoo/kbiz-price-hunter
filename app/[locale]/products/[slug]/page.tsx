@@ -11,6 +11,8 @@ import { getLocaleAlternates } from "@/lib/seo";
 import { getCategoryOptions } from "@/lib/product-categories";
 import { latestStorePrices } from "@/lib/latest-store-prices";
 import YogurtProfile, { yogurtSlug, yogurtDescription } from "@/app/products/YogurtProfile";
+import StapleProfile from "@/app/products/StapleProfile";
+import { getStapleProduct } from "@/lib/staple-profiles";
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kbiz-price-hunter.example";
 
@@ -38,11 +40,12 @@ async function getDisplayProduct(
   dict: ReturnType<typeof getDictionary>
 ): Promise<DisplayProduct | null> {
   const dbProduct = await prisma.product.findUnique({ where: { slug } });
+  const profile = getStapleProduct(slug);
   if (dbProduct) {
     return {
       slug: dbProduct.slug,
-      name: dbProduct.name,
-      summary: dbProduct.description?.trim() || dict.product.fallbackSummary,
+      name: profile?.name ?? dbProduct.name,
+      summary: profile?.description[locale] ?? (dbProduct.description?.trim() || dict.product.fallbackSummary),
       priceNote: dict.product.fallbackPriceNote,
       lastChecked: dict.product.fallbackLastChecked,
       highlights: dict.product.fallbackHighlights,
@@ -50,6 +53,9 @@ async function getDisplayProduct(
       productId: dbProduct.id,
     };
   }
+
+  if (profile) return { slug, name: profile.name, summary: profile.description[locale],
+    priceNote: dict.product.noPrices, lastChecked: "—", highlights: [], categories: ["hrani"] };
 
   const product = getProduct(slug);
   if (!product) {
@@ -76,15 +82,16 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: "Product not found | Ловец на цени" };
   }
 
-  const description = slug === yogurtSlug ? yogurtDescription(normalizedLocale === "bg") :
+  const profile = getStapleProduct(slug);
+  const description = profile?.description[normalizedLocale] ?? (slug === yogurtSlug ? yogurtDescription(normalizedLocale === "bg") :
     product.summary === dict.product.fallbackSummary
       ? normalizedLocale === "bg"
         ? `${product.name} - актуални цени и сравнение между магазини.`
         : `${product.name} with current prices and store comparison.`
-      : product.summary;
+      : product.summary);
 
   return {
-    title: `${product.name}${slug === yogurtSlug ? (normalizedLocale === "bg" ? " – състав, магазини и цени" : " – ingredients, stores and prices") : ""} | Ловец на цени`,
+    title: `${product.name}${profile ? (normalizedLocale === "bg" ? " – състав, магазини и цени" : " – ingredients, stores and prices") : ""} | Ловец на цени`,
     description,
     alternates: getLocaleAlternates(`/products/${slug}`, normalizedLocale),
   };
@@ -99,7 +106,8 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const sortKey = sortParam === "price-desc" ? "price-desc" : "price-asc";
   const city = (await searchParams)?.city ?? "";
   const bg = normalizedLocale === "bg";
-  const hasProfile = slug === yogurtSlug;
+  const profile = getStapleProduct(slug);
+  const hasProfile = Boolean(profile) || slug === yogurtSlug;
   const product = await getDisplayProduct(slug, normalizedLocale, dict);
   if (!product) {
     notFound();
@@ -196,8 +204,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
     "@id": `${baseUrl}/${normalizedLocale}/products/${slug}#product`,
     url: `${baseUrl}/${normalizedLocale}/products/${slug}`,
     name: product.name,
-    description: hasProfile ? yogurtDescription(bg) : product.summary,
-    ...(hasProfile ? { brand: { "@type": "Brand", name: "Боженци" }, weight: { "@type": "QuantitativeValue", value: 400, unitCode: "GRM" } } : {}),
+    description: product.summary,
+    ...(profile ? { brand: { "@type": "Brand", name: profile.brand },
+      ...(profile.gtin ? { gtin13: profile.gtin } : {}),
+      ...(profile.unit === "kg" ? { weight: { "@type": "QuantitativeValue", value: profile.quantity * 1000, unitCode: "GRM" } } : {}) } : {}),
     // Recorded prices have no verified offer validity; retain Product metadata only.
   };
 
@@ -213,7 +223,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           <div>
             <h1 style={{ marginTop: 16 }}>{product.name}</h1>
             <p style={{ marginTop: 12, color: "var(--ink-muted)" }}>
-              {hasProfile ? yogurtDescription(bg) : overviewText}
+              {hasProfile ? product.summary : overviewText}
             </p>
           </div>
           {!hasProfile && <div className="product-hero-image" aria-hidden="true" />}
@@ -222,11 +232,12 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         {hasProfile && <>
           <nav aria-label={bg ? "Навигация в каталога" : "Catalog navigation"} className="table-actions">
             <Link href={`${basePath}/products`}>{bg ? "Всички продукти" : "All products"}</Link>
+            <Link href={`${basePath}/products/staples`}>{bg ? "Основни продукти — сравнение" : "Everyday staples — compare"}</Link>
             <Link href={`${basePath}/products/category/hrani`}>{bg ? "Храни" : "Food"}</Link>
             <a href="#store-comparison">{bg ? "Магазини и записани цени ↓" : "Stores and recorded prices ↓"}</a>
             <a href="#price-history">{bg ? "История на цените ↓" : "Price history ↓"}</a>
           </nav>
-          <YogurtProfile bg={bg} />
+          {slug === yogurtSlug ? <YogurtProfile bg={bg} /> : profile && <StapleProfile profile={profile} bg={bg} />}
         </>}
 
         {!hasProfile && <section className="section">
@@ -255,6 +266,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               <h3>{dict.product.snapshot}</h3>
               <p>{priceNote}</p>
               <p>{lastChecked}</p>
+              {profile && <p>{bg
+                ? "Обединени записи за една и съща марка, вариант и разфасовка. Съпоставянето е по търговско наименование; баркодът не е наличен във всеки източник."
+                : "Combined records for the same brand, variant and pack size. Matching uses retailer names; not every source supplies a barcode."}</p>}
               {session?.user.email === "pajakoo@abv.bg" ? (
                 <ProductDeleteButton
                   slug={slug}
@@ -327,7 +341,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         <section className="section" id="price-history">
           <h2>{bg ? "История на цените" : "Price history"}</h2>
           <div className="card">
-            {priceSnapshots.length ? <ProductPriceChart slug={slug} currencyLabel="EUR" /> : <p>{dict.product.noPrices}</p>}
+            {priceSnapshots.length ? <ProductPriceChart key={`${slug}:${city}`} slug={slug} city={city} curated={Boolean(profile)} currencyLabel="EUR" /> : <p>{dict.product.noPrices}</p>}
           </div>
         </section>
 
@@ -368,7 +382,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 <tr>
                   <th>{bg ? "Магазин / адрес" : "Store / address"}</th>
                   <th>{bg ? "Град" : "City"}</th>
-                  <th>{hasProfile ? (bg ? "Цена за 400 г / кг" : "Price per 400 g / kg") : (bg ? "Цена" : "Price")}</th>
+                  <th>{profile ? (bg ? `Цена за опаковка / ${profile.unit === "kg" ? "кг" : "л"}` : `Pack price / ${profile.unit}`) : (bg ? "Цена" : "Price")}</th>
                   <th>{bg ? "Отчетено на" : "Observed on"}</th>
                 </tr>
               </thead>
@@ -376,9 +390,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                 {visibleStorePrices.length ? (
                   visibleStorePrices.map((price) => (
                     <tr key={price.id}>
-                      <td>{price.store.name}</td>
+                       <td>{price.store.name}{profile && price.source && <small style={{ display: "block", color: "var(--ink-muted)" }}>{price.source.split("/").at(-1)?.replace(/\.csv$/i, "")}</small>}</td>
                       <td>{price.store.city || (bg ? "Неуточнен" : "Unspecified")}</td>
-                      <td>{currencyFormatter.format(price.amount)} EUR{hasProfile && <small style={{ display: "block" }}>{currencyFormatter.format(price.amount / 0.4)} EUR/kg</small>}</td>
+                       <td>{currencyFormatter.format(price.amount)} EUR{profile && <small style={{ display: "block" }}>{currencyFormatter.format(price.amount / profile.quantity)} EUR/{profile.unit}</small>}</td>
                       <td>{dateFormatter.format(price.recordedAt)}</td>
                     </tr>
                   ))

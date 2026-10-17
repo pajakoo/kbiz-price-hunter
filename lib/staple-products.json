@@ -1,0 +1,82 @@
+[
+  {
+    "slug": "pryasno-mlyako-vereya-3-1l", "name": "Прясно мляко Верея 3% 1 л", "brand": "Верея", "quantity": 1, "unit": "l",
+    "description": {"bg": "Пастьоризирано краве мляко Верея с 3% масленост в разфасовка от 1 литър. Сравнете записаните цени за еднаквата разфасовка по магазини, населени места и дати.", "en": "Vereia pasteurised cow’s milk with 3% fat in a 1 litre pack. Compare recorded prices for the same pack across stores, locations and dates."},
+    "facts": [
+      {"bg": "Състав: краве мляко. Алерген: мляко. Производителят посочва пастьоризация за серията прясно мляко.", "en": "Ingredients: cow’s milk. Allergen: milk. The producer describes this fresh-milk range as pasteurised."},
+      {"bg": "Съхранявайте според температурата и срока на конкретната опаковка. Вариантите 1.5%, без лактоза, UHT и 2 л не участват в това сравнение.", "en": "Follow the storage temperature and date on your pack. The 1.5%, lactose-free, UHT and 2 litre variants are excluded."}
+    ],
+    "valuesCaption": {"bg": "Хранителни стойности за 100 мл", "en": "Nutrition per 100 ml"},
+    "values": [["Енергия / Energy", "231.6 kJ / 55.4 kcal"], ["Мазнини / Fat", "3 g"], ["Въглехидрати / Carbohydrate", "4.1 g"], ["Белтъчини / Protein", "3 g"]],
+    "sources": [{"label": "Верея — краве мляко 3%", "url": "https://vereia.bg/product/vereia-cow-milk-3/"}, {"label": "Верея — прясно мляко", "url": "https://vereia.bg/product-category/vereia-fresh-milk/"}], "checked": "2026-10-17"
+  },
+  {
+    "slug": "kiselo-mlyako-vereya-2-400g", "name": "Кисело мляко Верея 2% 400 г", "brand": "Верея", "quantity": 0.4, "unit": "kg",
+    "description": {"bg": "Кисело мляко Верея 2% в кофичка от 400 г. Вижте състава, публикуваните от производителя хранителни стойности и цените за кофичка и килограм.", "en": "Vereia 2% yogurt in a 400 g pot. Explore the ingredients, producer-published nutrition and recorded prices per pot and kilogram."},
+    "facts": [
+      {"bg": "Производителят описва серията като краве мляко с жива българска закваска: Lactobacillus bulgaricus и Streptococcus thermophilus. Алерген: мляко.", "en": "The producer describes the range as cow’s milk with Bulgarian starter cultures: Lactobacillus bulgaricus and Streptococcus thermophilus. Allergen: milk."},
+      {"bg": "Сравнението е за 2% и 400 г. Другите маслености, серията „Чудно“ и изрично означените ЗНП/БДС записи се разглеждат отделно. Следвайте указанията за охлаждане на етикета.", "en": "This comparison covers 2% and 400 g. Other fat levels, Chudno and explicitly PDO/BDS-labelled records are separate. Follow the refrigeration instructions on the label."}
+    ],
+    "valuesCaption": {"bg": "Хранителни стойности за 100 г", "en": "Nutrition per 100 g"},
+    "values": [["Енергия / Energy", "199.8 kJ / 47.6 kcal"], ["Мазнини / Fat", "2 g"], ["Въглехидрати / Carbohydrate", "4.2 g"], ["Белтъчини / Protein", "3.2 g"]],
+    "sources": [{"label": "Верея — кисело мляко 2%", "url": "https://vereia.bg/product/natural-bulgarian-yoghurt-2/"}, {"label": "Верея — състав на серията", "url": "https://vereia.bg/product-category/vereia-yoghurt/"}], "checked": "2026-10-17"
+  },
+  {
+    "slug": "kiselo-mlyako-bozhentsi-2-2-400g", "name": "Кисело мляко Боженци 2.2% 400 г", "brand": "Боженци", "quantity": 0.4, "unit": "kg",
+    "description": {"bg": "Боженци 2.2% — краве кисело мляко от ЕЛВИ, 400 г. Сравнете записаните цени за кофичка и килограм по магазини.", "en": "Bozhentsi 2.2% cow’s milk yogurt by ELVI, 400 g. Compare recorded store prices per pot and kilogram."},
+    "facts": [], "values": [], "valuesCaption": {"bg": "", "en": ""},
+    "sources": [{"label": "ЕЛВИ — Боженци", "url": "https://www.elvimilk.bg/bg/products/kiselo-mljako-ay-bojenci-au-4/"}], "checked": "2026-10-15"
+  },
+  {
+    "slug": "byala-zahar-sladeya-1kg", "name": "Бяла кристална захар Сладея 1 кг", "brand": "Сладея", "quantity": 1, "unit": "kg",
+    "description": {"bg": "Бяла кристална захар Сладея в пакет от 1 кг — марка на Захарни заводи. Сравнете цените за един пакет по магазини и проследете промените във времето.", "en": "Sladea white granulated sugar in a 1 kg pack, a Zaharni Zavodi brand. Compare recorded prices for one pack across stores and dates."},
+    "facts": [
+      {"bg": "Официалната страница потвърждава бяла кристална захар в разфасовки 0.5 и 1 кг. Захарни заводи произвежда и пакетира захарта под марката Сладея.", "en": "The brand page confirms white granulated sugar in 0.5 and 1 kg packs. Zaharni Zavodi produces and packs the sugar under the Sladea brand."},
+      {"bg": "За подслаждане и приготвяне на печива. Не смесваме цените с кафява, пудра, желираща захар, бучки или индивидуални пакетчета. При пакет 1 кг цената за пакет е и цената за килограм.", "en": "For sweetening and baking. Brown, icing and jam sugar, cubes and individual sachets are excluded. For a 1 kg pack, the pack price equals the price per kilogram."},
+      {"bg": "Проверената страница не публикува хранителна таблица или точни условия за съхранение за този пакет. Проверете етикета на закупения продукт.", "en": "The checked brand page does not publish a nutrition table or exact storage conditions for this pack. Check the purchased product’s label."}
+    ], "valuesCaption": {"bg": "", "en": ""}, "values": [],
+    "sources": [{"label": "Сладея / Захарни заводи — продукти и произход", "url": "https://sladea.bg/za-nas/"}], "checked": "2026-10-17"
+  },
+  {
+    "slug": "byala-zahar-zahira-1kg", "name": "Бяла кристална захар Захира 1 кг", "brand": "Захира", "quantity": 1, "unit": "kg", "gtin": "5941223000451",
+    "description": {"bg": "Захира Кристал е бяла кристална захар в пакет от 1 кг. Сравнете цените за единичния пакет; стековете, финият кристал и желиращата захар са отделни продукти.", "en": "Zahira Crystal is white granulated sugar in a 1 kg pack. Compare prices for a single pack; cases, fine crystal and jam sugar are separate products."},
+    "facts": [
+      {"bg": "Захира е марка на AGRANA. Официалната продуктова страница посочва EAN 5941223000451 за единичния пакет от 1 кг.", "en": "Zahira is an AGRANA brand. The official product page lists EAN 5941223000451 for the single 1 kg pack."},
+      {"bg": "Подходяща за подслаждане и печене. Сравнявайте еднакъв вид захар: „Кристал“ и „Фин кристал“ са отделни артикули. Цената за пакет от 1 кг е равна на цената за килограм.", "en": "For sweetening and baking. Compare the same type: Crystal and Fine Crystal are separate products. The 1 kg pack price equals the price per kilogram."},
+      {"bg": "В проверената продуктова страница няма хранителна таблица или конкретни условия за съхранение. За тях следвайте етикета.", "en": "The checked product page has no nutrition table or specific storage instructions. Follow the label for these details."}
+    ], "valuesCaption": {"bg": "", "en": ""}, "values": [],
+    "sources": [{"label": "Захира — Кристал 1 кг", "url": "https://www.zahira.bg/produkti/detail/za-pechene/zakhira-kristal/"}, {"label": "Захира / AGRANA", "url": "https://www.zahira.bg/"}], "checked": "2026-10-17"
+  },
+  {
+    "slug": "mineralna-voda-velingrad-1-5l", "name": "Минерална вода Велинград 1.5 л", "brand": "Велинград", "quantity": 1.5, "unit": "l",
+    "description": {"bg": "Минерална вода Велинград в единична бутилка от 1.5 л. Вижте публикувания минерален състав и сравнете записаните цени за бутилка и литър.", "en": "Velingrad mineral water in a single 1.5 litre bottle. Explore the published mineral composition and compare recorded prices per bottle and litre."},
+    "facts": [
+      {"bg": "Според официалната страница водата е от сондаж 5 „Горски пункт“, находище „Велинград – Чепино“. Публикуваните показатели са обща минерализация 196 mg/l и pH 9.37.", "en": "The official page identifies borehole 5 Gorski Punkt, Velingrad–Chepino. Published values are total mineralisation 196 mg/l and pH 9.37."},
+      {"bg": "Производителят предупреждава: не е подходяща за всекидневна употреба от кърмачета и деца под 7 години. Публикуваното съдържание на флуорид е 4.34 mg/l.", "en": "Producer notice: not suitable for daily consumption by infants and children under seven. The published fluoride content is 4.34 mg/l."},
+      {"bg": "Сравняваме негазирана минерална вода, една бутилка от 1.5 л. Sparkling, Fruity и стековете 6×1.5 л не са включени. Следвайте етикета за съхранение и състав на конкретната партида.", "en": "This comparison covers still mineral water, one 1.5 litre bottle. Sparkling, Fruity and 6×1.5 litre cases are excluded. Follow the label for storage and batch composition."}
+    ], "valuesCaption": {"bg": "Минерален състав, mg/l (публикуван от марката)", "en": "Mineral composition, mg/l (published by the brand)"},
+    "values": [["Натрий / Sodium", "40.24"], ["Калий / Potassium", "0.71"], ["Калций / Calcium", "3.17"], ["Флуорид / Fluoride", "4.34"], ["Хлорид / Chloride", "3.55"], ["Сулфат / Sulphate", "27.36"], ["Хидрогенкарбонат / Bicarbonate", "51.87"]],
+    "sources": [{"label": "Велинград — минерална вода, състав и разфасовки", "url": "https://velingradvoda.bg/"}], "checked": "2026-10-17"
+  },
+  {
+    "slug": "slanchogledovo-olio-biser-1l", "name": "Слънчогледово олио Бисер 1 л", "brand": "Бисер", "quantity": 1, "unit": "l",
+    "description": {"bg": "Слънчогледово олио Бисер в бутилка от 1 литър. Сравнете записаните цени за еднаква разфасовка и разгледайте информацията от Бисер Олива.", "en": "Biser sunflower oil in a 1 litre bottle. Compare recorded prices for the same size and explore information from Biser Oliva."},
+    "facts": [
+      {"bg": "Бисер Олива представя продукта като слънчогледово олио за универсална употреба, без консерванти и оцветители. Компанията е базирана в Стара Загора.", "en": "Biser Oliva describes the product as sunflower oil for general cooking use, without preservatives or colourings. The company is based in Stara Zagora."},
+      {"bg": "Един литър е сравняваната разфасовка от ценовите записи. Олио „Салатина“ и други обеми са отделни продукти. Цената за бутилка от 1 л е и цената за литър.", "en": "One litre is the pack size in the matched price records. Salatina oil and other sizes are separate products. A 1 litre bottle’s price equals its price per litre."},
+      {"bg": "Официалната продуктова страница не съдържа хранителна таблица и точни условия за съхранение. Използвайте указанията на опаковката; не извеждаме хранителни стойности от други масла.", "en": "The official product page does not provide a nutrition table or exact storage conditions. Follow the pack; we do not borrow nutrition values from other oils."}
+    ], "valuesCaption": {"bg": "", "en": ""}, "values": [],
+    "sources": [{"label": "Бисер Олива — олио Бисер", "url": "https://biseroliva.bg/olio-biser/"}], "checked": "2026-10-17"
+  },
+  {
+    "slug": "lyutenitsa-hortseto-zakuska-560g", "name": "Лютеница Хорцето Закуска едросмляна 560 г", "brand": "Хорцето", "quantity": 0.56, "unit": "kg",
+    "description": {"bg": "Едросмляна лютеница Хорцето „Закуска“ от Консервинвест в буркан от 560 г. Сравнете цените за тази рецепта и разфасовка и вижте състава и хранителните стойности от производителя.", "en": "Horceto Zakuska coarsely ground lyutenitsa by Conservinvest in a 560 g jar. Compare this recipe and size, with producer-sourced ingredients and nutrition."},
+    "facts": [
+      {"bg": "Състав: доматено пюре, печени белени чушки капия, вода, печен белен патладжан, захар, рафинирано слънчогледово масло, пюре от моркови, нишесте, йодирана сол и подправки.", "en": "Ingredients: tomato purée, roasted peeled kapia peppers, water, roasted peeled aubergine, sugar, refined sunflower oil, carrot purée, starch, iodised salt and spices."},
+      {"bg": "Официалната страница изброява 300 г, 560 г и 2.650 кг. Тук сравняваме само „Закуска“ 560 г. „Тип домашна“, „Ръченица“ и фино смляната лютеница са отделни рецепти.", "en": "The producer lists 300 g, 560 g and 2.650 kg. Here we compare only Zakuska 560 g. Home-style, Rachenitsa and finely ground lyutenitsa are separate recipes."},
+      {"bg": "Производителят не уточнява вида нишесте и алергените на проверената страница. Проверете етикета за алергени, съхранение и срока след отваряне.", "en": "The checked page does not specify starch type or allergens. Check the label for allergens, storage and the period after opening."}
+    ], "valuesCaption": {"bg": "Хранителни стойности за 100 г", "en": "Nutrition per 100 g"},
+    "values": [["Енергия / Energy", "491 kJ / 117 kcal"], ["Мазнини / Fat", "5.70 g"], ["Наситени / Saturates", "0.40 g"], ["Въглехидрати / Carbohydrate", "13.85 g"], ["Захари / Sugars", "11.03 g"], ["Фибри / Fibre", "0.93 g"], ["Белтъчини / Protein", "2.17 g"], ["Сол / Salt", "1.25 g"]],
+    "sources": [{"label": "Консервинвест — Хорцето Закуска", "url": "https://horceto.com/portfolio-item/lyutenitza-edrosmlyana-zakuska/"}], "checked": "2026-10-17"
+  }
+]
