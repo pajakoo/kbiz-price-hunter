@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import ProductPriceChart from "@/app/products/ProductPriceChart";
 import FavoriteAlertToggle from "@/app/products/FavoriteAlertToggle";
@@ -13,12 +15,21 @@ import { latestStorePrices } from "@/lib/latest-store-prices";
 import YogurtProfile, { yogurtSlug, yogurtDescription } from "@/app/products/YogurtProfile";
 import StapleProfile from "@/app/products/StapleProfile";
 import { getStapleProduct } from "@/lib/staple-profiles";
+import { queryProductPriceSnapshot } from "@/lib/product-price-snapshot";
+import { paginate } from "@/lib/pagination";
+
+const getDbProduct = cache((slug: string) => prisma.product.findUnique({ where: { slug } }));
+// Public price data only; authentication and subscriptions remain request-specific.
+const getPriceSnapshot = unstable_cache(
+  (productId: string) => queryProductPriceSnapshot(prisma, productId),
+  ["product-price-snapshot-v1"], { revalidate: 60 }
+);
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kbiz-price-hunter.example";
 
 type PageProps = {
   params: Promise<{ slug: string; locale: string }>;
-  searchParams?: Promise<{ sort?: string; city?: string }>;
+  searchParams?: Promise<{ sort?: string; city?: string; page?: string }>;
 };
 
 export const dynamic = "force-dynamic";
@@ -39,7 +50,7 @@ async function getDisplayProduct(
   locale: Locale,
   dict: ReturnType<typeof getDictionary>
 ): Promise<DisplayProduct | null> {
-  const dbProduct = await prisma.product.findUnique({ where: { slug } });
+  const dbProduct = await getDbProduct(slug);
   const profile = getStapleProduct(slug);
   if (dbProduct) {
     return {
@@ -108,26 +119,20 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const bg = normalizedLocale === "bg";
   const profile = getStapleProduct(slug);
   const hasProfile = Boolean(profile) || slug === yogurtSlug;
-  const product = await getDisplayProduct(slug, normalizedLocale, dict);
+  const [product, session] = await Promise.all([getDisplayProduct(slug, normalizedLocale, dict), getSession()]);
   if (!product) {
     notFound();
   }
-  const session = await getSession();
-
-  const subscription =
+  const [subscription, cachedSnapshots] = await Promise.all([
     session && product.productId
-      ? await prisma.priceAlertSubscription.findUnique({
+      ? prisma.priceAlertSubscription.findUnique({
           where: { userId_productId: { userId: session.user.id, productId: product.productId } },
         })
-      : null;
-
-  const priceSnapshots = product.productId
-    ? await prisma.price.findMany({
-        where: { productId: product.productId },
-        include: { store: true },
-        orderBy: [{ recordedAt: "desc" }, { id: "desc" }],
-      })
-    : [];
+      : Promise.resolve(null),
+    product.productId ? getPriceSnapshot(product.productId) : Promise.resolve([]),
+  ]);
+  // Next's persistent cache serializes Date values.
+  const priceSnapshots = cachedSnapshots.map(price => ({ ...price, recordedAt: new Date(price.recordedAt) }));
 
   const currencyFormatter = new Intl.NumberFormat(normalizedLocale, {
     minimumFractionDigits: 2,
@@ -172,6 +177,8 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const cheapestStore = sortedStorePrices.find((price) => price.amount === minPrice) ?? null;
   const cities = [...new Set(sortedStorePrices.map((price) => price.store.city).filter((value): value is string => Boolean(value)))].sort();
   const visibleStorePrices = city ? sortedStorePrices.filter((price) => price.store.city === city) : sortedStorePrices;
+  const pagination = paginate(visibleStorePrices, (await searchParams)?.page);
+  const pageHref = (page: number) => `${basePath}/products/${slug}?${new URLSearchParams({ sort: sortKey, ...(city ? { city } : {}), page: String(page) })}#store-comparison`;
   const priciestStore = sortedStorePrices.find((price) => price.amount === maxPrice) ?? null;
   const categoryLabels = getCategoryOptions()
     .filter((category) => product.categories.includes(category.slug))
@@ -348,7 +355,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         <section className="section" id="store-comparison">
           <h2>{bg ? "Къде е отчетен този продукт" : "Where this product was recorded"}</h2>
           <p>{bg ? "Магазини от нашите ценови записи. Датата е за конкретното наблюдение; тя не потвърждава наличност или днешна цена." : "Stores from our price records. Each date refers to an observation, not confirmed availability or today’s price."}</p>
-          <p>{bg ? `Показани обекти: ${visibleStorePrices.length} от ${storeLatest.size}.` : `Showing ${visibleStorePrices.length} of ${storeLatest.size} locations.`}</p>
+          <p>{bg ? `Показани обекти: ${visibleStorePrices.length ? pagination.start + 1 : 0}–${pagination.start + pagination.items.length} от ${visibleStorePrices.length} (общо ${storeLatest.size}).` : `Showing ${visibleStorePrices.length ? pagination.start + 1 : 0}–${pagination.start + pagination.items.length} of ${visibleStorePrices.length} locations (${storeLatest.size} total).`}</p>
           <form method="get" action={`${basePath}/products/${slug}#store-comparison`} className="table-actions">
             <input type="hidden" name="sort" value={sortKey} />
             <label htmlFor="store-city">{bg ? "Град " : "City "}</label>
@@ -388,7 +395,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               </thead>
               <tbody>
                 {visibleStorePrices.length ? (
-                  visibleStorePrices.map((price) => (
+                  pagination.items.map((price) => (
                     <tr key={price.id}>
                        <td>{price.store.name}{profile && price.source && <small style={{ display: "block", color: "var(--ink-muted)" }}>{price.source.split("/").at(-1)?.replace(/\.csv$/i, "")}</small>}</td>
                       <td>{price.store.city || (bg ? "Неуточнен" : "Unspecified")}</td>
@@ -404,6 +411,11 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               </tbody>
             </table>
           </div>
+          {pagination.pageCount > 1 && <nav className="table-actions" aria-label={bg ? "Страници с магазини" : "Store pages"}>
+            {pagination.page > 1 && <Link prefetch={false} className="button ghost" href={pageHref(pagination.page - 1)}>{bg ? "← Предишна" : "← Previous"}</Link>}
+            <span>{bg ? "Страница" : "Page"} {pagination.page} / {pagination.pageCount}</span>
+            {pagination.page < pagination.pageCount && <Link prefetch={false} className="button ghost" href={pageHref(pagination.page + 1)}>{bg ? "Следваща →" : "Next →"}</Link>}
+          </nav>}
         </section>
 
       </div>
