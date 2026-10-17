@@ -341,7 +341,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         <section className="section" id="price-history">
           <h2>{bg ? "История на цените" : "Price history"}</h2>
           <div className="card">
-            {priceSnapshots.length ? <ProductPriceChart key={`${slug}:${city}`} slug={slug} city={city} curated={Boolean(profile)} currencyLabel="EUR" /> : <p>{dict.product.noPrices}</p>}
+            {priceSnapshots.length ? <ProductPriceChart key={`${slug}:${city}`} slug={slug} city={city} locale={normalizedLocale} curated={Boolean(profile)} currencyLabel="EUR" /> : <p>{dict.product.noPrices}</p>}
           </div>
         </section>
 

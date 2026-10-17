@@ -11,21 +11,27 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { getProductHistory, type StoreSeries } from "@/lib/product-history";
+import { type StoreSeries } from "@/lib/product-history";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
+const STORE_COLORS = ["#3b82f6", "#f59e0b", "#a78bfa", "#06b6d4", "#f472b6"];
 
 type Props = {
   slug: string;
   currencyLabel: string;
   city?: string;
   curated?: boolean;
+  locale?: "bg" | "en";
 };
 
-export default function ProductPriceChart({ slug, currencyLabel, city = "", curated = false }: Props) {
-  const [series, setSeries] = useState<StoreSeries[]>(() => getProductHistory(slug));
+export default function ProductPriceChart({ slug, currencyLabel, city = "", curated = false, locale = "en" }: Props) {
+  const [series, setSeries] = useState<StoreSeries[]>([]);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("loading");
+  const [axisColor, setAxisColor] = useState("#94a3b8");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isCompact, setIsCompact] = useState(false);
+  const bg = locale === "bg";
 
   useEffect(() => {
     let active = true;
@@ -40,11 +46,15 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
         if (!active) return;
         if (payload.series) {
           setSeries(payload.series);
+          setSelected(payload.series.slice(0, 3).map((_, index) => index));
+          setStatus("ready");
+        } else {
+          setStatus("error");
         }
       })
       .catch(() => {
         if (!active) return;
-        setSeries(getProductHistory(slug));
+        setStatus("error");
       });
 
     return () => {
@@ -53,28 +63,26 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
   }, [slug, city]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const media = window.matchMedia("(max-width: 720px)");
-    const update = () => setIsCompact(media.matches);
+    const update = () => setAxisColor(getComputedStyle(document.documentElement).getPropertyValue("--ink-muted").trim() || "#94a3b8");
     update();
-
-    if (typeof media.addEventListener === "function") {
-      media.addEventListener("change", update);
-      return () => media.removeEventListener("change", update);
-    }
-
-    media.addListener(update);
-    return () => media.removeListener(update);
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setIsFullscreen(false); };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [isFullscreen]);
+
   const chartData = useMemo(() => {
-    const colors = ["#3b6df6", "#1f3b2c", "#9a6df7", "#c2410c", "#0891b2", "#be185d", "#6d7c18", "#7c3aed", "#475569", "#a16207"];
+    const colors = STORE_COLORS;
     const promoColor = "#f59e0b";
 
-    const datasets = series.map((item, index) => {
+    const datasets = selected.filter(index => series[index]).map((seriesIndex, index) => {
+      const item = series[seriesIndex];
       const points = [...item.points].sort((a, b) => a.date.localeCompare(b.date));
       const data: { x: number; y: number | null; isPromo: boolean }[] = [];
       for (const point of points) {
@@ -95,6 +103,7 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
         backgroundColor: "rgba(59, 109, 246, 0.15)",
         spanGaps: false,
         tension: 0,
+        borderWidth: 2,
         pointStyle: promoFlags.map((flag) => (flag ? "triangle" : "circle")),
         pointRadius: promoFlags.map((flag) => (flag ? 6 : 3)),
         pointBackgroundColor: promoFlags.map((flag) => (flag ? promoColor : colors[index % colors.length])),
@@ -105,7 +114,7 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
     const dates = datasets.flatMap((dataset) => dataset.data.map((point) => point.x));
     return { datasets, minDate: dates.length ? Math.min(...dates) : undefined,
       maxDate: dates.length ? Math.max(...dates) : undefined };
-  }, [series]);
+  }, [series, selected]);
 
   const formatTickValue = (value: number | string) => {
     const numeric = typeof value === "string" ? Number(value) : value;
@@ -115,11 +124,8 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
     return `${numeric.toFixed(2)} ${currencyLabel}`;
   };
 
-  const legendLabelMax = 28;
-  const formatLegendLabel = (label: string) =>
-    label.length > legendLabelMax ? `${label.slice(0, legendLabelMax - 1)}…` : label;
-
-  const fullscreenLabel = isFullscreen ? "Exit full screen" : "Full screen";
+  const fullscreenLabel = isFullscreen ? (bg ? "Затвори" : "Exit full screen") : (bg ? "Цял екран" : "Full screen");
+  const dateFormat = new Intl.DateTimeFormat(bg ? "bg-BG" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
   return (
     <div className={isFullscreen ? "chart-shell chart-shell--fullscreen" : "chart-shell"}>
@@ -132,39 +138,48 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
           {fullscreenLabel}
         </button>
       </div>
-      <p style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
-        Recorded observations / Отчетени цени. Gaps over 93 days are not connected / Периоди над 93 дни без наблюдение не са свързани.
-      </p>
+      <details className="price-chart-info"><summary>{bg ? "За данните" : "About this history"}</summary>
+        <p>{bg ? "Показани са отчетени цени, не гарантирана текуща наличност. Периоди над 93 дни без наблюдение не са свързани. Триъгълниците означават промоция." : "Recorded prices, not guaranteed current availability. Gaps over 93 days are not connected. Triangles mark promotions."}</p>
+      </details>
       {curated && <p style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
-        До 10 обекта с най-много наблюдения за избрания град; всички обекти са в таблицата. / Up to 10 stores with the most observations in the selected city; see the table for all stores.
+        {bg ? "Избор от до 10 обекта с най-много наблюдения; всички обекти са в таблицата." : "Choose from up to 10 stores with the most observations; all stores are in the table."}
       </p>}
-      <div className="chart-canvas">
+      {status === "ready" && series.length > 0 && <>
+        <details className="price-chart-picker">
+          <summary>{bg ? "Избери магазини" : "Choose stores"} ({selected.length}/5)</summary>
+          <input type="search" className="chart-input" aria-label={bg ? "Търси магазин или град" : "Search store or city"}
+            placeholder={bg ? "Търси магазин или град…" : "Search store or city…"} value={search} onChange={event => setSearch(event.target.value)} />
+          <div className="price-chart-store-list">
+            {series.map((item, index) => ({ item, index })).filter(({ item }) => item.store.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())).map(({ item, index }) =>
+              <label key={index}><input type="checkbox" checked={selected.includes(index)} disabled={!selected.includes(index) && selected.length >= 5}
+                onChange={() => setSelected(current => current.includes(index) ? current.filter(value => value !== index) : current.length < 5 ? [...current, index] : current)} />{item.store}</label>)}
+          </div>
+          <small>{bg ? "До 5 магазина едновременно. Търсенето обхваща заредените истории." : "Compare up to 5 stores. Search covers loaded histories."}</small>
+        </details>
+        <div className="price-chart-chips" aria-label={bg ? "Избрани магазини" : "Selected stores"}>
+          {selected.map((index, position) => <button key={index} type="button" title={series[index]?.store}
+            aria-label={`${bg ? "Премахни" : "Remove"} ${series[index]?.store}`} onClick={() => setSelected(current => current.filter(value => value !== index))}>
+            <span style={{ background: STORE_COLORS[position] }} aria-hidden="true" /><span>{series[index]?.store}</span><span aria-hidden="true">×</span>
+          </button>)}
+        </div>
+      </>}
+      {status !== "ready" || !series.length || !selected.length ? <p role="status">{status === "loading" ? (bg ? "Зареждане…" : "Loading…") : status === "error" ? (bg ? "Историята не може да се зареди. Опитайте да презаредите страницата." : "History could not load. Try reloading the page.") : !series.length ? (bg ? "Няма записани цени." : "No recorded prices.") : (bg ? "Изберете магазин за сравнение." : "Choose a store to compare.")}</p> : <div className="chart-canvas">
         <Line
           data={chartData}
           options={{
             responsive: true,
             maintainAspectRatio: false,
+            interaction: { mode: "nearest", intersect: true },
             plugins: {
               tooltip: {
+                filter: (_item, index) => index === 0,
                 callbacks: {
                   title: (items) => items[0]?.parsed.x != null ? new Date(items[0].parsed.x).toISOString().slice(0, 10) : "",
-                  label: (item) => `${item.dataset.label}: ${formatTickValue(item.parsed.y ?? 0)}`,
+                  label: (item) => [formatTickValue(item.parsed.y ?? 0), ...(item.dataset.label?.match(/.{1,38}(?:\s|$)|.{1,38}/g) ?? [])],
                 },
               },
               legend: {
-                position: "bottom",
-                display: !isCompact,
-                labels: {
-                  boxWidth: 12,
-                  padding: 12,
-                  generateLabels: (chart) =>
-                    ChartJS.defaults.plugins.legend.labels
-                      .generateLabels(chart)
-                      .map((label) => ({
-                        ...label,
-                        text: formatLegendLabel(label.text),
-                      })),
-                },
+                display: false,
               },
             },
             scales: {
@@ -173,20 +188,23 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
                 min: chartData.minDate,
                 max: chartData.maxDate,
                 ticks: {
+                  color: axisColor,
                   maxTicksLimit: 6,
-                  callback: (value) => new Date(Number(value)).toISOString().slice(0, 10),
+                  callback: (value) => dateFormat.format(new Date(Number(value))),
                 },
               },
               y: {
+                title: { display: true, text: currencyLabel, color: axisColor },
                 ticks: {
+                  color: axisColor,
                   precision: 2,
-                  callback: (value) => formatTickValue(value),
+                  callback: (value) => Number(value).toFixed(2),
                 },
               },
             },
           }}
         />
-      </div>
+      </div>}
     </div>
   );
 }

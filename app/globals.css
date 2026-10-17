@@ -390,6 +390,17 @@ html[data-theme="dark"] .pill {
   height: 320px;
 }
 
+.price-chart-info, .price-chart-picker { margin-bottom: 16px; color: var(--ink-muted); }
+.price-chart-info summary, .price-chart-picker summary { cursor: pointer; }
+.price-chart-picker .chart-input { margin-top: 12px; color: var(--ink); }
+.price-chart-store-list { max-height: 220px; overflow-y: auto; margin: 12px 0; }
+.price-chart-store-list label { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; overflow-wrap: anywhere; }
+.price-chart-store-list input { width: auto; margin: 0; flex-shrink: 0; }
+.price-chart-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.price-chart-chips button { display: flex; align-items: center; gap: 8px; max-width: min(100%, 300px); padding: 8px 12px; border: 1px solid var(--line); border-radius: 20px; background: transparent; color: var(--ink); cursor: pointer; }
+.price-chart-chips button span:first-child { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.price-chart-chips button span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .chart-shell--fullscreen .chart-canvas {
   height: calc(100vh - 180px);
 }
