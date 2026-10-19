@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { handlePriceDropAlert } from "@/lib/price-alerts";
 import { getStapleProduct } from "@/lib/staple-profiles";
+import { MAX_COMPARISON_STORES } from "@/lib/store-comparison";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,10 +11,17 @@ export async function GET(request: Request) {
   const productSlug = searchParams.get("productSlug")?.trim() ?? "";
   const canonicalKey = searchParams.get("canonicalKey")?.trim() ?? "";
   const city = searchParams.get("city")?.trim() ?? "";
+  const selectedStoreIds = [...new Set(searchParams.getAll("storeId").map(value => value.trim()).filter(Boolean))];
+  if (selectedStoreIds.length > MAX_COMPARISON_STORES || selectedStoreIds.some(id => id.length > 200)) {
+    return NextResponse.json({ ok: false, error: "Select up to 5 valid store IDs." }, { status: 400 });
+  }
   const maxPointsParam = Number.parseInt(searchParams.get("maxPoints") ?? "", 10);
   const maxPoints = Number.isFinite(maxPointsParam) && maxPointsParam > 0
     ? Math.min(maxPointsParam, 2000)
     : 1000;
+  if (selectedStoreIds.length > maxPoints) {
+    return NextResponse.json({ ok: false, error: "maxPoints must allow at least one observation per selected store." }, { status: 400 });
+  }
 
   if (!productId && !productSlug && !canonicalKey) {
     return NextResponse.json(
@@ -49,13 +57,15 @@ export async function GET(request: Request) {
       ? [product.id]
       : [];
 
-  const curated = Boolean(product && getStapleProduct(product.slug)) && !canonicalKey;
-  const eligibleWhere = { productId: { in: productIds }, ...(city ? { store: { city } } : {}) };
+  const curated = Boolean(product && getStapleProduct(product.slug)) && !canonicalKey && !selectedStoreIds.length;
+  // Explicit comparisons can span cities and are not restricted to the default top ten.
+  const eligibleWhere = { productId: { in: productIds }, ...(selectedStoreIds.length
+    ? { storeId: { in: selectedStoreIds } } : city ? { store: { city } } : {}) };
   const chartStores = curated ? await prisma.price.groupBy({ by: ["storeId"], where: eligibleWhere,
     _count: { id: true }, orderBy: [{ _count: { id: "desc" } }, { storeId: "asc" }], take: 10 }) : [];
-  const prices = await prisma.price.findMany({
+  const priceQuery = {
     where: { ...eligibleWhere, ...(curated ? { storeId: { in: chartStores.map(s => s.storeId) } } : {}) },
-    orderBy: [{ recordedAt: "desc" }, { id: "asc" }],
+    orderBy: [{ recordedAt: "desc" as const }, { id: "asc" as const }],
     take: maxPoints,
       select: {
         amount: true,
@@ -68,12 +78,21 @@ export async function GET(request: Request) {
         select: { name: true, city: true },
       },
     },
-  });
+  } as const;
+  const prices = selectedStoreIds.length
+    ? (await Promise.all(selectedStoreIds.map(storeId => prisma.price.findMany({
+        ...priceQuery,
+        where: { productId: { in: productIds }, storeId },
+        orderBy: [{ recordedAt: "desc" }, { id: "asc" }],
+        take: Math.max(1, Math.floor(maxPoints / selectedStoreIds.length)),
+      })))).flat()
+    : await prisma.price.findMany({ ...priceQuery, orderBy: [{ recordedAt: "desc" }, { id: "asc" }] });
 
   const series = prices.reduce<
     Record<
       string,
       {
+        storeId: string;
         store: string;
         city: string | null;
         source?: string | null;
@@ -84,6 +103,7 @@ export async function GET(request: Request) {
     const key = price.storeId;
     if (!acc[key]) {
       acc[key] = {
+        storeId: price.storeId,
         store: price.store.name,
         city: price.store.city,
         source: price.source ?? null,

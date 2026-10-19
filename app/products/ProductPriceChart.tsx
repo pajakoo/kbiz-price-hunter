@@ -12,6 +12,8 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { type StoreSeries } from "@/lib/product-history";
+import { useStoreComparison } from "./StoreComparison";
+import type { ComparisonStore } from "@/lib/store-comparison";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 const STORE_COLORS = ["#3b82f6", "#f59e0b", "#a78bfa", "#06b6d4", "#f472b6"];
@@ -24,29 +26,43 @@ type Props = {
   locale?: "bg" | "en";
 };
 
-export default function ProductPriceChart({ slug, currencyLabel, city = "", curated = false, locale = "en" }: Props) {
-  const [series, setSeries] = useState<StoreSeries[]>([]);
+export default function ProductPriceChart(props: Props) {
+  const { stores, toggle } = useStoreComparison(props.slug);
+  return <PriceChart key={JSON.stringify([props.slug, props.city, stores.map(store => store.id)])}
+    {...props} comparisonStores={stores} removeStore={toggle} />;
+}
+
+function PriceChart({ slug, currencyLabel, city = "", curated = false, locale = "en", comparisonStores, removeStore }: Props & {
+  comparisonStores: ComparisonStore[]; removeStore: (store: ComparisonStore) => void;
+}) {
+  const [series, setSeries] = useState<(StoreSeries & { storeId?: string })[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("loading");
   const [axisColor, setAxisColor] = useState("#94a3b8");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const bg = locale === "bg";
+  const comparisonIds = JSON.stringify(comparisonStores.map(store => store.id));
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/prices?productSlug=${encodeURIComponent(slug)}&maxPoints=1000&city=${encodeURIComponent(city)}`)
+    const query = new URLSearchParams({ productSlug: slug, maxPoints: "1000", city });
+    const ids: string[] = JSON.parse(comparisonIds);
+    ids.forEach(id => query.append("storeId", id));
+    const controller = new AbortController();
+    fetch(`/api/prices?${query}`, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) {
           throw new Error("Failed to load price history");
         }
-        return response.json() as Promise<{ series?: StoreSeries[] }>;
+        return response.json() as Promise<{ series?: (StoreSeries & { storeId?: string })[] }>;
       })
       .then((payload) => {
         if (!active) return;
         if (payload.series) {
-          setSeries(payload.series);
-          setSelected(payload.series.slice(0, 3).map((_, index) => index));
+          const histories = ids.length ? [...payload.series].sort((a, b) => ids.indexOf(a.storeId ?? "") - ids.indexOf(b.storeId ?? "")) : payload.series;
+          setSeries(histories);
+          setSelected(histories.slice(0, ids.length ? 5 : 3).map((_, index) => index));
           setStatus("ready");
         } else {
           setStatus("error");
@@ -59,8 +75,9 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
 
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [slug, city]);
+  }, [slug, city, comparisonIds]);
 
   useEffect(() => {
     const update = () => setAxisColor(getComputedStyle(document.documentElement).getPropertyValue("--ink-muted").trim() || "#94a3b8");
@@ -112,8 +129,12 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
     });
 
     const dates = datasets.flatMap((dataset) => dataset.data.map((point) => point.x));
-    return { datasets, minDate: dates.length ? Math.min(...dates) : undefined,
-      maxDate: dates.length ? Math.max(...dates) : undefined };
+    const minDate = dates.length ? Math.min(...dates) : undefined;
+    const maxDate = dates.length ? Math.max(...dates) : undefined;
+    // A single observation gives min === max, which collapses a linear axis and hides the point.
+    const padded = minDate !== undefined && maxDate !== undefined && minDate === maxDate;
+    return { datasets, minDate: padded ? minDate - 43200000 : minDate,
+      maxDate: padded ? maxDate + 43200000 : maxDate, padded };
   }, [series, selected]);
 
   const formatTickValue = (value: number | string) => {
@@ -126,6 +147,7 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
 
   const fullscreenLabel = isFullscreen ? (bg ? "Затвори" : "Exit full screen") : (bg ? "Цял екран" : "Full screen");
   const dateFormat = new Intl.DateTimeFormat(bg ? "bg-BG" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  const dateTimeFormat = new Intl.DateTimeFormat(bg ? "bg-BG" : "en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
 
   return (
     <div className={isFullscreen ? "chart-shell chart-shell--fullscreen" : "chart-shell"}>
@@ -141,11 +163,12 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
       <details className="price-chart-info"><summary>{bg ? "За данните" : "About this history"}</summary>
         <p>{bg ? "Показани са отчетени цени, не гарантирана текуща наличност. Периоди над 93 дни без наблюдение не са свързани. Триъгълниците означават промоция." : "Recorded prices, not guaranteed current availability. Gaps over 93 days are not connected. Triangles mark promotions."}</p>
       </details>
-      {curated && <p style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
+      {comparisonStores.length > 0 && <p className="price-chart-info">{bg ? "Сравняват се избраните от таблицата магазини, независимо от филтъра за град." : "Comparing stores selected in the table, regardless of the city filter."}</p>}
+      {curated && !comparisonStores.length && <p style={{ color: "var(--ink-muted)", fontSize: "0.85rem" }}>
         {bg ? "Избор от до 10 обекта с най-много наблюдения; всички обекти са в таблицата." : "Choose from up to 10 stores with the most observations; all stores are in the table."}
       </p>}
       {status === "ready" && series.length > 0 && <>
-        <details className="price-chart-picker">
+        {!comparisonStores.length && <details className="price-chart-picker">
           <summary>{bg ? "Избери магазини" : "Choose stores"} ({selected.length}/5)</summary>
           <input type="search" className="chart-input" aria-label={bg ? "Търси магазин или град" : "Search store or city"}
             placeholder={bg ? "Търси магазин или град…" : "Search store or city…"} value={search} onChange={event => setSearch(event.target.value)} />
@@ -155,10 +178,14 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
                 onChange={() => setSelected(current => current.includes(index) ? current.filter(value => value !== index) : current.length < 5 ? [...current, index] : current)} />{item.store}</label>)}
           </div>
           <small>{bg ? "До 5 магазина едновременно. Търсенето обхваща заредените истории." : "Compare up to 5 stores. Search covers loaded histories."}</small>
-        </details>
+        </details>}
         <div className="price-chart-chips" aria-label={bg ? "Избрани магазини" : "Selected stores"}>
           {selected.map((index, position) => <button key={index} type="button" title={series[index]?.store}
-            aria-label={`${bg ? "Премахни" : "Remove"} ${series[index]?.store}`} onClick={() => setSelected(current => current.filter(value => value !== index))}>
+            aria-label={`${bg ? "Премахни" : "Remove"} ${series[index]?.store}`} onClick={() => {
+              const store = comparisonStores.find(store => store.id === series[index]?.storeId);
+              if (store) removeStore(store);
+              else setSelected(current => current.filter(value => value !== index));
+            }}>
             <span style={{ background: STORE_COLORS[position] }} aria-hidden="true" /><span>{series[index]?.store}</span><span aria-hidden="true">×</span>
           </button>)}
         </div>
@@ -189,8 +216,8 @@ export default function ProductPriceChart({ slug, currencyLabel, city = "", cura
                 max: chartData.maxDate,
                 ticks: {
                   color: axisColor,
-                  maxTicksLimit: 6,
-                  callback: (value) => dateFormat.format(new Date(Number(value))),
+                  maxTicksLimit: chartData.padded ? 3 : 6,
+                  callback: (value) => (chartData.padded ? dateTimeFormat : dateFormat).format(new Date(Number(value))),
                 },
               },
               y: {

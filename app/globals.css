@@ -480,6 +480,73 @@ html[data-theme="dark"] .product-search input {
   margin: 12px 0 16px;
 }
 
+.store-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px 28px;
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.store-city-filter { display: flex; align-items: flex-end; gap: 10px; flex: 1 1 300px; min-width: 0; }
+.store-control-field { display: grid; gap: 8px; min-width: 0; }
+.store-city-filter .store-control-field { flex: 1; max-width: 380px; }
+.store-control-field > label, .store-control-field > span { margin: 0; color: var(--ink-muted); font-size: 0.8rem; font-weight: 600; }
+.store-controls .store-control-field select {
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0 38px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background-color: var(--paper);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23808b9b' stroke-width='1.8'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.store-controls .button, .store-pagination .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin: 0; padding: 0 18px; border-radius: 10px; font-size: 0.9rem; white-space: nowrap; }
+.store-sort { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; }
+.store-sort .filter-chip { display: flex; align-items: center; justify-content: center; min-height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; font-size: 0.85rem; white-space: nowrap; }
+.store-sort .filter-chip--active { background: var(--accent-soft); color: var(--accent); }
+.store-controls :is(select, button, a):focus-visible, .store-pagination a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.store-sort a:hover, .store-pagination a:hover { box-shadow: inset 0 0 0 1px var(--accent); }
+.store-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 0; }
+.store-pagination [aria-disabled="true"] { opacity: 0.4; cursor: default; }
+.store-page-count { color: var(--ink-muted); font-size: 0.85rem; text-align: center; }
+.store-page-count strong { color: var(--ink); }
+
+.store-comparison-bar { padding-bottom: 18px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.store-comparison-bar-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+.store-comparison-bar-heading .table-actions { margin: 0; align-items: center; }
+.store-comparison-bar small { color: var(--ink-muted); }
+.store-comparison-bar .price-chart-chips { margin: 0; }
+.compare-store-button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--ink); white-space: nowrap; font: inherit; font-size: 0.85rem; cursor: pointer; }
+.compare-store-button.is-selected { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.compare-store-button:disabled { opacity: 0.4; cursor: default; }
+.compare-store-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+#price-history { scroll-margin-top: 100px; }
+
+@media (max-width: 640px) {
+  .store-controls { padding: 14px; gap: 16px; }
+  .store-controls > .store-control-field, .store-city-filter { width: 100%; flex-basis: 100%; }
+  .store-city-filter .store-control-field { max-width: none; }
+  .store-sort .filter-chip { flex: 1; padding: 0 8px; }
+  .store-pagination { flex-wrap: wrap; gap: 10px; }
+  .store-page-count { order: -1; flex-basis: 100%; }
+  .store-pagination .button { flex: 1; padding: 0 12px; }
+}
+
 html[data-theme="dark"] .filter-chip {
   background: rgba(255, 255, 255, 0.04);
   color: var(--ink);
