@@ -1,6 +1,6 @@
-import type { StapleProduct } from "@/lib/staple-profiles";
+import type { CuratedProfile } from "@/lib/curated-profiles";
 
-export default function StapleProfile({ profile, bg }: { profile: StapleProduct; bg: boolean }) {
+export default function StapleProfile({ profile, bg }: { profile: CuratedProfile; bg: boolean }) {
   const locale = bg ? "bg" : "en";
   return <section className="section" aria-labelledby="product-details">
     <h2 id="product-details">{bg ? "За продукта" : "About this product"}</h2>
@@ -19,11 +19,11 @@ export default function StapleProfile({ profile, bg }: { profile: StapleProduct;
         </table>
       </div>}
     </div>
-    <p>{bg ? "Източници от производителя/марката: " : "Producer/brand sources: "}
+    {profile.sources.length > 0 && <p>{bg ? "Източници от производителя/марката: " : "Producer/brand sources: "}
       {profile.sources.map((source, index) => <span key={source.url}>
         {index > 0 && " · "}<a href={source.url} target="_blank" rel="noopener noreferrer">{source.label}</a>
       </span>)}
-    </p>
+    </p>}
     <p>{bg ? "Проверено: " : "Checked: "}{profile.checked}. {bg
       ? "При разлика следвайте етикета на конкретната опаковка. Цените по-долу идват от отделните търговски записи, а не от сайтовете на производителите."
       : "If details differ, follow your pack’s label. Prices below come from separate retailer records, not the producer websites."}</p>

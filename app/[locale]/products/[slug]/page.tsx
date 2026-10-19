@@ -14,15 +14,22 @@ import { getCategoryOptions } from "@/lib/product-categories";
 import { latestStorePrices } from "@/lib/latest-store-prices";
 import YogurtProfile, { yogurtSlug, yogurtDescription } from "@/app/products/YogurtProfile";
 import StapleProfile from "@/app/products/StapleProfile";
-import { getStapleProduct } from "@/lib/staple-profiles";
+import { getCuratedProfile } from "@/lib/curated-profiles";
 import { queryProductPriceSnapshot } from "@/lib/product-price-snapshot";
+import { queryPriceSummary } from "@/lib/price-summary";
+import PriceInsights from "@/app/products/PriceInsights";
 import { paginate } from "@/lib/pagination";
+import { CompareStoreButton, StoreComparisonBar } from "@/app/products/StoreComparison";
 
 const getDbProduct = cache((slug: string) => prisma.product.findUnique({ where: { slug } }));
 // Public price data only; authentication and subscriptions remain request-specific.
 const getPriceSnapshot = unstable_cache(
   (productId: string) => queryProductPriceSnapshot(prisma, productId),
   ["product-price-snapshot-v1"], { revalidate: 60 }
+);
+const getPriceSummary = unstable_cache(
+  (productId: string) => queryPriceSummary(prisma, productId),
+  ["product-price-summary-v1"], { revalidate: 60 }
 );
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kbiz-price-hunter.example";
@@ -51,7 +58,7 @@ async function getDisplayProduct(
   dict: ReturnType<typeof getDictionary>
 ): Promise<DisplayProduct | null> {
   const dbProduct = await getDbProduct(slug);
-  const profile = getStapleProduct(slug);
+  const profile = getCuratedProfile(slug);
   if (dbProduct) {
     return {
       slug: dbProduct.slug,
@@ -93,7 +100,7 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: "Product not found | Ловец на цени" };
   }
 
-  const profile = getStapleProduct(slug);
+  const profile = getCuratedProfile(slug);
   const description = profile?.description[normalizedLocale] ?? (slug === yogurtSlug ? yogurtDescription(normalizedLocale === "bg") :
     product.summary === dict.product.fallbackSummary
       ? normalizedLocale === "bg"
@@ -117,7 +124,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   const sortKey = sortParam === "price-desc" ? "price-desc" : "price-asc";
   const city = (await searchParams)?.city ?? "";
   const bg = normalizedLocale === "bg";
-  const profile = getStapleProduct(slug);
+  const profile = getCuratedProfile(slug);
   const hasProfile = Boolean(profile) || slug === yogurtSlug;
   const [product, session] = await Promise.all([getDisplayProduct(slug, normalizedLocale, dict), getSession()]);
   if (!product) {
@@ -131,6 +138,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
       : Promise.resolve(null),
     product.productId ? getPriceSnapshot(product.productId) : Promise.resolve([]),
   ]);
+  const priceSummary = product.productId ? await getPriceSummary(product.productId) : null;
   // Next's persistent cache serializes Date values.
   const priceSnapshots = cachedSnapshots.map(price => ({ ...price, recordedAt: new Date(price.recordedAt) }));
 
@@ -345,6 +353,8 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
             errorLabel={dict.product.alertError}
           />
         ) : null}
+        {priceSummary ? <PriceInsights summary={priceSummary} locale={normalizedLocale}
+          unit={profile?.unit} quantity={profile?.quantity} /> : null}
         <section className="section" id="price-history">
           <h2>{bg ? "История на цените" : "Price history"}</h2>
           <div className="card">
@@ -356,17 +366,23 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
           <h2>{bg ? "Къде е отчетен този продукт" : "Where this product was recorded"}</h2>
           <p>{bg ? "Магазини от нашите ценови записи. Датата е за конкретното наблюдение; тя не потвърждава наличност или днешна цена." : "Stores from our price records. Each date refers to an observation, not confirmed availability or today’s price."}</p>
           <p>{bg ? `Показани обекти: ${visibleStorePrices.length ? pagination.start + 1 : 0}–${pagination.start + pagination.items.length} от ${visibleStorePrices.length} (общо ${storeLatest.size}).` : `Showing ${visibleStorePrices.length ? pagination.start + 1 : 0}–${pagination.start + pagination.items.length} of ${visibleStorePrices.length} locations (${storeLatest.size} total).`}</p>
-          <form method="get" action={`${basePath}/products/${slug}#store-comparison`} className="table-actions">
+          <div className="store-controls">
+          <form method="get" action={`${basePath}/products/${slug}#store-comparison`} className="store-city-filter">
             <input type="hidden" name="sort" value={sortKey} />
+            <div className="store-control-field">
             <label htmlFor="store-city">{bg ? "Град " : "City "}</label>
             <select id="store-city" name="city" defaultValue={city}>
               <option value="">{bg ? "Всички градове" : "All cities"}</option>
               {cities.map((value) => <option key={value} value={value}>{value}</option>)}
             </select>
+            </div>
             <button type="submit" className="button ghost">{bg ? "Покажи" : "Show"}</button>
           </form>
-          <div className="table-actions">
+          <div className="store-control-field">
+          <span id="store-sort-label">{bg ? "Подреди по цена" : "Sort by price"}</span>
+          <div className="store-sort" role="group" aria-labelledby="store-sort-label">
             <Link
+              aria-current={sortKey === "price-asc" ? "true" : undefined}
               className={
                 sortKey === "price-asc" ? "filter-chip filter-chip--active" : "filter-chip"
               }
@@ -375,6 +391,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               {sortLowLabel}
             </Link>
             <Link
+              aria-current={sortKey === "price-desc" ? "true" : undefined}
               className={
                 sortKey === "price-desc" ? "filter-chip filter-chip--active" : "filter-chip"
               }
@@ -383,7 +400,10 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
               {sortHighLabel}
             </Link>
           </div>
+          </div>
+          </div>
           <div className="card table-shell">
+            <StoreComparisonBar slug={slug} bg={bg} />
             <table className="price-table">
               <thead>
                 <tr>
@@ -391,6 +411,7 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                   <th>{bg ? "Град" : "City"}</th>
                   <th>{profile ? (bg ? `Цена за опаковка / ${profile.unit === "kg" ? "кг" : "л"}` : `Pack price / ${profile.unit}`) : (bg ? "Цена" : "Price")}</th>
                   <th>{bg ? "Отчетено на" : "Observed on"}</th>
+                  <th>{bg ? "Сравнение" : "Compare"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -401,20 +422,21 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
                       <td>{price.store.city || (bg ? "Неуточнен" : "Unspecified")}</td>
                        <td>{currencyFormatter.format(price.amount)} EUR{profile && <small style={{ display: "block" }}>{currencyFormatter.format(price.amount / profile.quantity)} EUR/{profile.unit}</small>}</td>
                       <td>{dateFormatter.format(price.recordedAt)}</td>
+                      <td><CompareStoreButton slug={slug} store={{ id: price.storeId, name: price.store.name }} bg={bg} /></td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                     <td colSpan={4}>{city ? (bg ? "Няма записани цени за избрания град. Изберете „Всички градове“." : "No recorded prices for this city. Select All cities.") : dict.product.noPrices}</td>
+                     <td colSpan={5}>{city ? (bg ? "Няма записани цени за избрания град. Изберете „Всички градове“." : "No recorded prices for this city. Select All cities.") : dict.product.noPrices}</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-          {pagination.pageCount > 1 && <nav className="table-actions" aria-label={bg ? "Страници с магазини" : "Store pages"}>
-            {pagination.page > 1 && <Link prefetch={false} className="button ghost" href={pageHref(pagination.page - 1)}>{bg ? "← Предишна" : "← Previous"}</Link>}
-            <span>{bg ? "Страница" : "Page"} {pagination.page} / {pagination.pageCount}</span>
-            {pagination.page < pagination.pageCount && <Link prefetch={false} className="button ghost" href={pageHref(pagination.page + 1)}>{bg ? "Следваща →" : "Next →"}</Link>}
+          {pagination.pageCount > 1 && <nav className="store-pagination" aria-label={bg ? "Страници с магазини" : "Store pages"}>
+            {pagination.page > 1 ? <Link prefetch={false} className="button ghost" href={pageHref(pagination.page - 1)}>{bg ? "← Предишна" : "← Previous"}</Link> : <span className="button ghost" aria-disabled="true">{bg ? "← Предишна" : "← Previous"}</span>}
+            <span className="store-page-count">{bg ? "Страница" : "Page"} <strong>{pagination.page}</strong> / {pagination.pageCount}</span>
+            {pagination.page < pagination.pageCount ? <Link prefetch={false} className="button ghost" href={pageHref(pagination.page + 1)}>{bg ? "Следваща →" : "Next →"}</Link> : <span className="button ghost" aria-disabled="true">{bg ? "Следваща →" : "Next →"}</span>}
           </nav>}
         </section>
 

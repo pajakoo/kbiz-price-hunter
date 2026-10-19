@@ -1,0 +1,151 @@
+[
+  {
+    "slug": "maslinovo-maslo-kosta-doro-1l-ekstra-vardzhin",
+    "name": "Маслиново масло Коста Доро екстра върджин 1 л",
+    "brand": "Коста Доро",
+    "quantity": 1,
+    "unit": "l",
+    "description": {"bg": "Екстра върджин маслиново масло Коста Доро в бутилка от 1 литър. Страницата сравнява записаните цени за точно тази разфасовка и показва как се различават между магазините и датите.", "en": "Kosta Doro extra virgin olive oil in a 1 litre bottle. This page compares recorded prices for this exact pack and shows how they differ between stores and dates."},
+    "facts": [
+      {"bg": "Сравняваме само екстра върджин маслиново масло в бутилка от 1 л. Други обеми, разфасовки в кутия и други марки не участват в тези цени.", "en": "Only extra virgin olive oil in a 1 litre bottle is compared. Other volumes, tins and other brands are excluded."},
+      {"bg": "Не открихме проверена официална продуктова страница с хранителни стойности за тази опаковка. Затова не публикуваме състав, киселинност или хранителни стойности; проверете етикета на бутилката.", "en": "We found no verified official product page with nutrition data for this pack. We therefore publish no ingredients, acidity or nutrition values; check the bottle label."}
+    ],
+    "sources": [],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "kiselo-mlyako-sayana-2-400gr",
+    "name": "Кисело мляко Саяна 2% 400 г",
+    "brand": "Саяна",
+    "quantity": 0.4,
+    "unit": "kg",
+    "description": {"bg": "Кисело мляко Саяна 2% в кофичка от 400 г. Вижте записаните цени за кофичка и килограм и как се различават по магазини и дати.", "en": "Sayana 2% yogurt in a 400 g pot. See recorded prices per pot and kilogram and how they differ between stores and dates."},
+    "facts": [
+      {"bg": "Сравняваме 2% масленост и 400 г. Вариантите 3.6%, други обеми и марки не участват в тези цени.", "en": "This comparison covers 2% fat and 400 g. The 3.6% variant, other sizes and other brands are excluded."},
+      {"bg": "Саяна е марка на „Милки Груп Био“. За продуктите се използват свежо сурово прясно мляко и подбрани закваски от чисти култури, а производствената база е в Хасково.", "en": "Sayana is a Milky Group Bio brand. The producer uses fresh raw milk and selected pure cultures, with production based in Haskovo."},
+      {"bg": "Официалният сайт на марката представя гамата кисели млека, но не публикува продуктова таблица с хранителни стойности за тази кофичка. Не публикуваме състав или стойности без проверен източник.", "en": "The brand site presents the yogurt range but publishes no product nutrition table for this pot. We publish no ingredients or values without a verified source."}
+    ],
+    "sources": [{"label": "Саяна — за марката", "url": "https://sayana.bg/%D0%B7%D0%B0-%D0%BC%D0%B0%D1%80%D0%BA%D0%B0%D1%82%D0%B0"}],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "maslo-hraninvest-125gr-traditsionno",
+    "name": "Краве масло Хранинвест традиционно 125 г",
+    "brand": "Хранинвест",
+    "quantity": 0.125,
+    "unit": "kg",
+    "description": {"bg": "Краве масло Хранинвест в опаковка от 125 г. Сравнете записаните цени за пакет и килограм, с дата и магазин към всяко наблюдение.", "en": "Hraninvest cow’s butter in a 125 g pack. Compare recorded prices per pack and kilogram, with a date and store for every observation."},
+    "facts": [
+      {"bg": "Производителят публикува за 82% краве масло: масло от краве мляко 82%, вода максимум 16%, енергийна стойност 3056 kJ / 743 kcal на 100 г, съхранение при 0–4 °C.", "en": "For its 82% butter the producer publishes: 82% cow’s milk butter, water max 16%, 3056 kJ / 743 kcal per 100 g, storage at 0–4 °C."},
+      {"bg": "Хранинвест предлага и вариант с 70% масло и 30% растителна мазнина, който е различен продукт. Сравняваме само записите, обозначени като традиционно краве масло 125 г; проверете процента върху опаковката.", "en": "Hraninvest also offers a 70% butter with 30% vegetable fat, which is a different product. We compare only records labelled traditional cow’s butter 125 g; check the percentage on the pack."}
+    ],
+    "sources": [{"label": "Хранинвест — краве масло 125 г", "url": "https://hraninvest.bg/продукти/краве-масло-и-маргарин/краве-масло-125-гр"}],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "maslo-hraninvest-250gr-traditsionno",
+    "name": "Краве масло Хранинвест традиционно 250 г",
+    "brand": "Хранинвест",
+    "quantity": 0.25,
+    "unit": "kg",
+    "description": {"bg": "Краве масло Хранинвест в опаковка от 250 г. Сравнете записаните цени за пакет и килограм по магазини и дати.", "en": "Hraninvest cow’s butter in a 250 g pack. Compare recorded prices per pack and kilogram across stores and dates."},
+    "facts": [
+      {"bg": "Производителят публикува за 82% краве масло: масло от краве мляко 82%, вода максимум 16%, енергийна стойност 3056 kJ / 743 kcal на 100 г, съхранение при 0–4 °C.", "en": "For its 82% butter the producer publishes: 82% cow’s milk butter, water max 16%, 3056 kJ / 743 kcal per 100 g, storage at 0–4 °C."},
+      {"bg": "Опаковките 125 г, 250 г и 500 г се сравняват отделно, защото цената за пакет не е цена за килограм. Вариантът с 70% масло и растителна мазнина е различен продукт.", "en": "The 125 g, 250 g and 500 g packs are compared separately because a pack price is not a kilogram price. The 70% butter with vegetable fat is a different product."}
+    ],
+    "sources": [{"label": "Хранинвест — краве масло 250 г", "url": "https://hraninvest.bg/продукти/краве-масло-и-маргарин/краве-масло-250-гр"}],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "pryasno-mlyako-balkan-3-1l",
+    "name": "Прясно мляко Балкан 3% 1 л",
+    "brand": "Балкан",
+    "quantity": 1,
+    "unit": "l",
+    "description": {"bg": "Прясно мляко Балкан 3% в разфасовка от 1 литър. Сравнете записаните цени по магазини и вижте цената за литър.", "en": "Balkan 3% fresh milk in a 1 litre pack. Compare recorded prices across stores and see the price per litre."},
+    "facts": [
+      {"bg": "Сравняваме 3% масленост и 1 л. Други маслености, обеми, UHT и безлактозни варианти не участват.", "en": "This comparison covers 3% fat and 1 litre. Other fat levels, sizes, UHT and lactose-free variants are excluded."},
+      {"bg": "Производителят „Лактима“ посочва пастьоризация при 93 °C, за разлика от UHT млякото над 100 °C, и срок на годност 20 дни. Състав: стандартизирано пастьоризирано прясно мляко.", "en": "Producer Lactima states pasteurisation at 93 °C, unlike UHT milk above 100 °C, and a 20-day shelf life. Ingredients: standardised pasteurised fresh milk."},
+      {"bg": "След отваряне млякото се консумира до 2 дни или се сварява. Съхранение при 2–6 °C. Проверете датата върху конкретната бутилка.", "en": "After opening, consume within 2 days or boil it. Store at 2–6 °C. Check the date on your bottle."}
+    ],
+    "valuesCaption": {"bg": "Хранителни стойности за 100 мл (публикувани от производителя)", "en": "Nutrition per 100 ml (published by the producer)"},
+    "values": [["Енергия / Energy", "245.2 kJ / 58.6 kcal"], ["Мазнини / Fat", "3 g"], ["Наситени мазнини / Saturated fat", "1.8 g"], ["Въглехидрати / Carbohydrate", "4.7 g"], ["Захари / Sugars", "4.7 g"], ["Белтъчини / Protein", "3.2 g"], ["Сол / Salt", "0.1 g"]],
+    "sources": [{"label": "Лактима — Прясно мляко Балкан 3% 1 л", "url": "https://lactima.net/produkti/pryasno-mlyako-balkan-3-protsenta-1-l/"}],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "kiselo-mlyako-terter-2-9-400gr",
+    "name": "Кисело мляко Тертер 2.9% 400 г",
+    "brand": "Тертер",
+    "quantity": 0.4,
+    "unit": "kg",
+    "description": {"bg": "Кисело мляко Тертер 2.9% в кофичка от 400 г. Вижте записаните цени за кофичка и килограм и историята по дати.", "en": "Terter 2.9% yogurt in a 400 g pot. See recorded prices per pot and kilogram and the history by date."},
+    "facts": [
+      {"bg": "Състав: краве мляко, сухо обезмаслено краве мляко и българска закваска с живи Lactobacillus bulgaricus и Streptococcus thermophilus. Без консерванти, оцветители и растителни мазнини.", "en": "Ingredients: cow’s milk, skimmed milk powder and Bulgarian starter with live Lactobacillus bulgaricus and Streptococcus thermophilus. No preservatives, colourings or vegetable fats."},
+      {"bg": "Съхранение при 2–6 °C, трайност 33 дни, нетно тегло 400 г. Сравняваме 2.9% и 400 г; вариантите 4.2%, с каймак и цедено са отделни продукти.", "en": "Store at 2–6 °C, 33-day shelf life, 400 g net. This comparison covers 2.9% and 400 g; the 4.2%, creamy and strained variants are separate products."}
+    ],
+    "valuesCaption": {"bg": "Хранителни стойности за 100 г (публикувани от производителя)", "en": "Nutrition per 100 g (published by the producer)"},
+    "values": [["Енергия / Energy", "247 kJ / 59 kcal"], ["Мазнини / Fat", "2.9 g"], ["Наситени мазнини / Saturated fat", "1.8 g"], ["Въглехидрати / Carbohydrate", "4.7 g"], ["Захари / Sugars", "4.7 g"], ["Белтъчини / Protein", "3.4 g"], ["Сол / Salt", "0.10 g"]],
+    "gtin": "3800207820954",
+    "sources": [{"label": "Тертер — Краве кисело мляко 2,9%", "url": "https://www.tertercheese.com/краве-кисело-мляко-с-2-9-масленост_id1"}],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "izvorna-voda-baldaran-1-5l",
+    "name": "Изворна вода Балдаран 1.5 л",
+    "brand": "Балдаран",
+    "quantity": 1.5,
+    "unit": "l",
+    "description": {"bg": "Изворна вода Балдаран в бутилка от 1.5 л от извор на 1327 м в Родопите. Сравнете записаните цени за бутилка и литър и вижте публикувания минерален състав.", "en": "Baldaran spring water in a 1.5 litre bottle from a 1327 m spring in the Rhodopes. Compare recorded prices per bottle and litre and see the published mineral composition."},
+    "facts": [
+      {"bg": "Производителят посочва извор „Балдаран“ на 1327 м надморска височина, под връх Баташки снежник, землище на с. Фотиново, на около 15 км от Девин. Водата е слабо минерализирана и подходяща за всекидневна консумация.", "en": "The producer identifies the Baldaran spring at 1327 m below Batashki Snezhnik peak, near Futinovo village, about 15 km from Devin. The water is low-mineralisation and intended for daily consumption."},
+      {"bg": "Публикувани стойности: обща минерализация 90 mg/l, pH 7.41, натрий 4.86 mg/l, флуор под 0.05 mg/l. Сравняваме негазирана изворна вода в една бутилка от 1.5 л; газираната серия, ароматизираните води и стековете са отделни продукти.", "en": "Published values: total mineralisation 90 mg/l, pH 7.41, sodium 4.86 mg/l, fluoride below 0.05 mg/l. This compares still spring water in one 1.5 litre bottle; sparkling, flavoured and multipacks are separate."}
+    ],
+    "valuesCaption": {"bg": "Минерален състав, mg/l (публикуван от марката)", "en": "Mineral composition, mg/l (published by the brand)"},
+    "values": [["Калций / Calcium", "6.21"], ["Натрий / Sodium", "4.86"], ["Магнезий / Magnesium", "0.43"], ["Сулфати / Sulphate", "4.53"], ["Хлориди / Chloride", "3.19"], ["Флуор / Fluoride", "<0.05"], ["Обща минерализация / Total mineralisation", "90"]],
+    "sources": [{"label": "Балдаран — произход и състав", "url": "https://baldaran.bg/"}, {"label": "Балдаран 1.5 л", "url": "https://baldaran.bg/portfolio/%d0%b8%d0%b7%d0%b2%d0%be%d1%80%d0%bd%d0%b0-%d0%b2%d0%be%d0%b4%d0%b0-1-5-l/"}],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "kiselo-mlyako-vereya-chudno-2-5-400gr",
+    "name": "Кисело мляко Верея Чудно 2.5% 400 г",
+    "brand": "Верея",
+    "quantity": 0.4,
+    "unit": "kg",
+    "description": {"bg": "Кисело мляко Верея Чудно 2.5% в кофичка от 400 г. Сравнете записаните цени по магазини и вижте цената за килограм.", "en": "Vereia Chudno 2.5% yogurt in a 400 g pot. Compare recorded prices across stores and see the price per kilogram."},
+    "facts": [
+      {"bg": "„Чудно“ е отделна серия на Верея и не се смесва с класическото кисело мляко 2%. Официалният сайт я описва като 100% българско първокачествено краве мляко от избрани ферми, с разфасовки 200 г и 400 г и варианти кисело мляко 2.5% и 5%.", "en": "Chudno is a separate Vereia range and is not merged with the classic 2% yogurt. The official site describes it as 100% Bulgarian cow’s milk from selected farms, in 200 g and 400 g packs, with 2.5% and 5% yogurt variants."},
+      {"bg": "Сайтът на марката не публикува отделна хранителна таблица за „Чудно“ 2.5%. Не публикуваме състав или стойности без проверен източник; проверете етикета.", "en": "The brand site publishes no separate nutrition table for Chudno 2.5%. We publish no ingredients or values without a verified source; check the label."}
+    ],
+    "sources": [{"label": "Верея — серия Чудно", "url": "https://vereia.bg/product-category/vereia-chudno/"}],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "kiselo-mlyako-domlyan-2-500gr",
+    "name": "Кисело мляко Домлян 2% 500 г",
+    "brand": "Домлян",
+    "quantity": 0.5,
+    "unit": "kg",
+    "description": {"bg": "Кисело мляко Домлян 2% в кофичка от 500 г. Сравнете записаните цени за кофичка и килограм.", "en": "Domlyan 2% yogurt in a 500 g pot. Compare recorded prices per pot and kilogram."},
+    "facts": [
+      {"bg": "Сравняваме 2% масленост и 500 г. Вариантът 3.6%, други обеми и марки не участват.", "en": "This comparison covers 2% fat and 500 g. The 3.6% variant, other sizes and brands are excluded."},
+      {"bg": "Не открихме проверена официална продуктова страница за тази кофичка. Не публикуваме състав или хранителни стойности без източник.", "en": "We found no verified official product page for this pot. We publish no ingredients or nutrition without a source."}
+    ],
+    "sources": [],
+    "checked": "2026-10-19"
+  },
+  {
+    "slug": "maslo-olimpus-200gr",
+    "name": "Краве масло Олимпус 200 г",
+    "brand": "Олимпус",
+    "quantity": 0.2,
+    "unit": "kg",
+    "description": {"bg": "Краве масло Олимпус в опаковка от 200 г. Сравнете записаните цени за пакет и килограм по магазини и дати.", "en": "Olimpus cow’s butter in a 200 g pack. Compare recorded prices per pack and kilogram across stores and dates."},
+    "facts": [
+      {"bg": "Сравняваме пакет от 200 г. Опаковките 125 г и 250 г и продуктите с растителни мазнини се разглеждат отделно.", "en": "This comparison covers a 200 g pack. The 125 g and 250 g packs and products with vegetable fats are separate."},
+      {"bg": "Марката Olympus публикува в гамата си „Масло 82%“, но не потвърдихме отделна страница за опаковката от 200 г. Затова не публикуваме хранителни стойности; проверете етикета.", "en": "The Olympus brand lists an 82% butter in its range, but we did not confirm a separate page for the 200 g pack. We therefore publish no nutrition values; check the label."}
+    ],
+    "sources": [{"label": "Olympus — сметана и масло", "url": "https://www.olympusfoods.bg/produkti/cream-butter"}],
+    "checked": "2026-10-19"
+  }
+]
