@@ -232,19 +232,21 @@ export default function PriceChart({
     });
     return ["all", ...Array.from(cities)];
   }, [uniqueSeries]);
+  const selectedCity = cityOptions.includes(cityFilter) ? cityFilter : "all";
 
   const cityFilteredSeries = useMemo(() => {
-    if (cityFilter === "all") {
+    if (selectedCity === "all") {
       return uniqueSeries;
     }
-    return uniqueSeries.filter((series) => (series.city ?? "") === cityFilter);
-  }, [uniqueSeries, cityFilter]);
+    return uniqueSeries.filter((series) => (series.city ?? "") === selectedCity);
+  }, [uniqueSeries, selectedCity]);
 
   const storeOptions = useMemo(() => {
     const stores = new Set<string>();
     cityFilteredSeries.forEach((series) => stores.add(formatStoreLabel(series)));
     return ["all", ...Array.from(stores)];
   }, [cityFilteredSeries]);
+  const selectedStore = storeOptions.includes(storeFilter) ? storeFilter : "all";
 
   const filteredProductOptions = useMemo(() => {
     const query = productQuery.trim().toLowerCase();
@@ -262,9 +264,9 @@ export default function PriceChart({
 
   const chartData = useMemo(() => {
     const filteredSeries =
-      storeFilter === "all"
+      selectedStore === "all"
         ? cityFilteredSeries
-        : cityFilteredSeries.filter((series) => formatStoreLabel(series) === storeFilter);
+        : cityFilteredSeries.filter((series) => formatStoreLabel(series) === selectedStore);
 
     const labels = Array.from(
       new Set(filteredSeries.flatMap((series) => series.points.map((point) => point.date)))
@@ -293,7 +295,7 @@ export default function PriceChart({
     });
 
     return { labels, datasets };
-  }, [cityFilteredSeries, storeFilter]);
+  }, [cityFilteredSeries, selectedStore]);
 
   const formatTickValue = (value: number | string) => {
     const numeric = typeof value === "string" ? Number(value) : value;
@@ -341,6 +343,7 @@ export default function PriceChart({
               value={product.key}
               onChange={(event) => {
                 setSelectedKey(event.target.value);
+                setCityFilter("all");
                 setStoreFilter("all");
               }}
             >
@@ -356,7 +359,7 @@ export default function PriceChart({
             <select
               id="city-select"
               className="chart-select"
-              value={cityFilter}
+              value={selectedCity}
               onChange={(event) => {
                 setCityFilter(event.target.value);
                 setStoreFilter("all");
@@ -374,7 +377,7 @@ export default function PriceChart({
             <select
               id="store-select"
               className="chart-select"
-              value={storeFilter}
+              value={selectedStore}
               onChange={(event) => setStoreFilter(event.target.value)}
             >
               {storeOptions.map((store) => (
