@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ProductDeleteButton from "@/app/products/ProductDeleteButton";
 import type { CategoryOption } from "@/lib/product-categories";
@@ -73,11 +73,12 @@ export default function ProductList({
 
   const filterKey = filterParams.toString();
 
-  const loadPage = async (nextPage: number, replace: boolean) => {
-    const params = new URLSearchParams(filterParams);
+  const loadPage = useCallback(async (nextPage: number, replace: boolean) => {
+    const params = new URLSearchParams(filterKey);
     params.set("page", String(nextPage));
 
-    replace ? setLoading(true) : setLoadingMore(true);
+    if (replace) setLoading(true);
+    else setLoadingMore(true);
 
     try {
       const response = await fetch(`/api/products?${params.toString()}`);
@@ -99,12 +100,12 @@ export default function ProductList({
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [filterKey]);
 
   useEffect(() => {
     setPage(1);
     loadPage(1, true);
-  }, [filterKey]);
+  }, [loadPage]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -123,7 +124,7 @@ export default function ProductList({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore, loading, page, filterKey]);
+  }, [hasMore, loadingMore, loading, page, loadPage]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((current) =>

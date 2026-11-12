@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShoppingCart, LogOut } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import PriceChart from "@/app/dashboard/PriceChart";
 import ProductCreateForm from "@/app/dashboard/ProductCreateForm";

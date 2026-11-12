@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,6 +26,18 @@ type StoreSeries = {
   source?: string | null;
   points: PricePoint[];
 };
+
+function formatSourceLabel(source?: string | null) {
+  if (!source) return "";
+  const withoutExtension = source.replace(/\.[^.]+$/, "");
+  const withoutNumericSuffix = withoutExtension.replace(/_\d+$/, "");
+  return withoutNumericSuffix.replace(/_/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function formatStoreLabel(series: StoreSeries) {
+  const sourceLabel = formatSourceLabel(series.source);
+  return sourceLabel ? `${series.store} (${sourceLabel})` : series.store;
+}
 
 type ChartProduct = {
   key: string;
@@ -137,37 +149,15 @@ export default function PriceChart({
     [productOptions]
   );
 
-  const [product, setProduct] = useState(initialProduct);
-  const preferredSet = useRef(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const product = productOptions.find((item) => item.key === selectedKey) ?? initialProduct;
+  const requestKey = `${product.key}:${product.canonicalKey ?? ""}:${product.slug ?? ""}`;
   const [productQuery, setProductQuery] = useState("");
   const [cityFilter, setCityFilter] = useState("all");
   const [storeFilter, setStoreFilter] = useState("all");
-  const [seriesOverride, setSeriesOverride] = useState<StoreSeries[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadedSeries, setLoadedSeries] = useState<{ key: string; series: StoreSeries[] } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
-
-  useEffect(() => {
-    const preferred = productOptions.find((item) => item.source === "db");
-    if (!preferredSet.current && preferred) {
-      setProduct(preferred);
-      setStoreFilter("all");
-      preferredSet.current = true;
-    }
-  }, [productOptions]);
-
-  useEffect(() => {
-    if (!productOptions.find((item) => item.key === product.key)) {
-      setProduct(productOptions[0]);
-      setStoreFilter("all");
-      setSeriesOverride(null);
-      setLoading(false);
-    }
-  }, [productOptions, product.key]);
-
-  useEffect(() => {
-    setStoreFilter("all");
-  }, [cityFilter]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -188,15 +178,9 @@ export default function PriceChart({
   }, []);
 
   useEffect(() => {
-    if (product.source !== "db" || !product.slug) {
-      setSeriesOverride(null);
-      setLoading(false);
-      return;
-    }
+    if (product.source !== "db" || !product.slug) return;
 
     const controller = new AbortController();
-    setLoading(true);
-    setSeriesOverride(null);
 
     const queryParam = product.canonicalKey
       ? `canonicalKey=${encodeURIComponent(product.canonicalKey)}`
@@ -212,33 +196,19 @@ export default function PriceChart({
         const payload = (await response.json()) as {
           series?: StoreSeries[];
         };
-        setSeriesOverride(payload.series ?? []);
+        if (!controller.signal.aborted) setLoadedSeries({ key: requestKey, series: payload.series ?? [] });
       })
       .catch(() => {
-        setSeriesOverride([]);
-      })
-      .finally(() => {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoadedSeries({ key: requestKey, series: [] });
       });
 
     return () => controller.abort();
-  }, [product]);
+  }, [product.source, product.slug, product.canonicalKey, requestKey]);
 
-  const activeSeries = product.source === "db" ? seriesOverride ?? [] : product.series;
-
-  const formatSourceLabel = (source?: string | null) => {
-    if (!source) {
-      return "";
-    }
-    const withoutExtension = source.replace(/\.[^.]+$/, "");
-    const withoutNumericSuffix = withoutExtension.replace(/_\d+$/, "");
-    return withoutNumericSuffix.replace(/_/g, " ").replace(/\s+/g, " ").trim();
-  };
-
-  const formatStoreLabel = (series: StoreSeries) => {
-    const sourceLabel = formatSourceLabel(series.source);
-    return sourceLabel ? `${series.store} (${sourceLabel})` : series.store;
-  };
+  const loading = product.source === "db" && loadedSeries?.key !== requestKey;
+  const activeSeries = useMemo(() => product.source === "db"
+    ? loadedSeries?.key === requestKey ? loadedSeries.series : []
+    : product.series, [product, loadedSeries, requestKey]);
 
   const uniqueSeries = useMemo(() => {
     const seen = new Set<string>();
@@ -370,13 +340,8 @@ export default function PriceChart({
               className="chart-select"
               value={product.key}
               onChange={(event) => {
-                const selected = productOptions.find(
-                  (item) => item.key === event.target.value
-                );
-                if (selected) {
-                  setProduct(selected);
-                  setStoreFilter("all");
-                }
+                setSelectedKey(event.target.value);
+                setStoreFilter("all");
               }}
             >
               {filteredProductOptions.map((item) => (
@@ -392,7 +357,10 @@ export default function PriceChart({
               id="city-select"
               className="chart-select"
               value={cityFilter}
-              onChange={(event) => setCityFilter(event.target.value)}
+              onChange={(event) => {
+                setCityFilter(event.target.value);
+                setStoreFilter("all");
+              }}
             >
               {cityOptions.map((city) => (
                 <option key={city} value={city}>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "kbiz-theme";
 
 type Theme = "light" | "dark";
+const THEME_CHANGE = "kbiz-theme-change";
 
 function getPreferredTheme(): Theme {
   if (typeof window === "undefined") {
@@ -19,20 +20,34 @@ function getPreferredTheme(): Theme {
     : "light";
 }
 
+function subscribeToTheme(notify: () => void) {
+  window.addEventListener("storage", notify);
+  window.addEventListener(THEME_CHANGE, notify);
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", notify);
+  return () => {
+    window.removeEventListener("storage", notify);
+    window.removeEventListener(THEME_CHANGE, notify);
+    media.removeEventListener("change", notify);
+  };
+}
+
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    getPreferredTheme,
+    () => "light"
+  );
 
   useEffect(() => {
-    const preferred = getPreferredTheme();
-    setTheme(preferred);
-    document.documentElement.dataset.theme = preferred;
-  }, []);
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   function toggleTheme() {
     const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
     document.documentElement.dataset.theme = nextTheme;
     window.localStorage.setItem(STORAGE_KEY, nextTheme);
+    window.dispatchEvent(new Event(THEME_CHANGE));
   }
 
   return (
