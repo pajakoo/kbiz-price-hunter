@@ -3,6 +3,7 @@ import enrichments from "./product-enrichments.json";
 
 export type CuratedFact = { bg: string; en: string };
 export type CuratedSource = { label: string; url: string };
+export type ProductQuestion = { question: CuratedFact; answer: CuratedFact };
 
 export type CuratedProfile = {
   slug: string;
@@ -17,6 +18,7 @@ export type CuratedProfile = {
   gtin?: string;
   quantity: number;
   unit: "kg" | "l";
+  questions?: ProductQuestion[];
 };
 
 type EnrichmentEntry = {

@@ -32,8 +32,6 @@ const getPriceSummary = unstable_cache(
   ["product-price-summary-v1"], { revalidate: 60 }
 );
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kbiz-price-hunter.example";
-
 type PageProps = {
   params: Promise<{ slug: string; locale: string }>;
   searchParams?: Promise<{ sort?: string; city?: string; page?: string }>;
@@ -213,26 +211,9 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         ? "Ще покажем сравнение по магазини веднага щом има повече ценови данни."
         : "Store-level comparisons will appear here as more price observations are collected.";
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "@id": `${baseUrl}/${normalizedLocale}/products/${slug}#product`,
-    url: `${baseUrl}/${normalizedLocale}/products/${slug}`,
-    name: product.name,
-    description: product.summary,
-    ...(profile ? { brand: { "@type": "Brand", name: profile.brand },
-      ...(profile.gtin ? { gtin13: profile.gtin } : {}),
-      ...(profile.unit === "kg" ? { weight: { "@type": "QuantitativeValue", value: profile.quantity * 1000, unitCode: "GRM" } } : {}) } : {}),
-    // Recorded prices have no verified offer validity; retain Product metadata only.
-  };
-
   return (
     <main className="page-shell" suppressHydrationWarning>
       <div className="container">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
         <span className="pill">{dict.product.publicTag}</span>
         <div className="product-hero">
           <div>

@@ -1,7 +1,11 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
-import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { Readable, Writable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import dotenv from "dotenv";
 import { Client } from "pg";
 import { from as copyFrom } from "pg-copy-streams";
@@ -12,369 +16,91 @@ import { slugify } from "../lib/slugify";
 import { buildCanonicalKey } from "../lib/canonical-key";
 
 dotenv.config();
+type Batch = { archive: string; date: string; digest: string; logicalKey: string;
+  files: { filePath: string; source: string; rows: number; repairedQuoteRows?: number }[];
+  rejected: { entry: string; line: number; reason: string }[] };
+type Row = { city: string; store: string; productName: string; productCode: string;
+  amount: string; isPromo: boolean; identity: string };
+const hash = (...parts: string[]) => createHash("sha256").update(JSON.stringify(parts)).digest("hex");
+const escape = (value: string | null) => value === null ? "\\N" : value
+  .replace(/\\/g, "\\\\").replace(/\t/g, "\\t").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
 
-const REQUIRED_HEADERS = {
-  city: "Населено място",
-  store: "Търговски обект",
-  productName: "Наименование на продукта",
-  productCode: "Код на продукта",
-  retailPrice: "Цена на дребно",
-  promoPrice: "Цена в промоция",
-};
-
-type CsvRow = {
-  city: string;
-  store: string;
-  productName: string;
-  productCode: string;
-  retailPrice: string;
-  promoPrice: string;
-};
-
-type ImportRow = {
-  storeId: string;
-  storeName: string;
-  storeCity: string | null;
-  productId: string;
-  productSlug: string;
-  productName: string;
-  productDescription: string;
-  productCategories: string[];
-  canonicalKey: string | null;
-  priceId: string;
-  amount: number;
-  isPromo: boolean;
-  recordedAt: string;
-  source: string;
-};
-
-function parseCsvLine(line: string) {
-  const values: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i += 1) {
-    const char = line[i];
-
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
+async function* stagedRows(batch: Batch, currency: string) {
+  for (const file of batch.files) {
+    const stream = fs.createReadStream(file.filePath, { encoding: "utf8" });
+    const lines = readline.createInterface({ input: stream, crlfDelay: Infinity });
+    try {
+      for await (const line of lines) {
+        const row: Row = JSON.parse(line);
+        const name = normalizeProductName(row.productName);
+        const slug = slugify(name) || `source-${hash(file.source, row.productCode)}`;
+        const city = normalizeCity(row.city, row.store);
+        yield [hash("store", row.store, city ?? ""), row.store, city,
+          hash("product", slug), slug, name, getProductCategories(name).join(","), buildCanonicalKey(name),
+          hash("price-v1", batch.date, currency, row.identity), row.amount, String(row.isPromo),
+          batch.date, currency, `${batch.archive}/${file.source}`, hash(file.source, row.productCode)].map(escape).join("\t") + "\n";
       }
-      continue;
-    }
-
-    if (char === "," && !inQuotes) {
-      values.push(current);
-      current = "";
-      continue;
-    }
-
-    current += char;
-  }
-
-  values.push(current);
-  return values.map((value) => value.trim());
-}
-
-function parsePrice(value: string) {
-  const normalized = value.replace(/\s/g, "").replace(",", ".");
-  const amount = Number.parseFloat(normalized);
-  return Number.isNaN(amount) ? null : amount;
-}
-
-function buildSlug(productCode: string, productName: string) {
-  const normalizedName = slugify(productName);
-  if (normalizedName) {
-    return normalizedName;
-  }
-
-  const normalizedCode = slugify(productCode);
-  return normalizedCode ? normalizedCode : `product-${Date.now()}`;
-}
-
-function toCsvRow(headers: string[], row: string[]): CsvRow | null {
-  const getValue = (key: keyof typeof REQUIRED_HEADERS) => {
-    const headerName = REQUIRED_HEADERS[key];
-    const index = headers.indexOf(headerName);
-    return index >= 0 ? row[index] ?? "" : "";
-  };
-
-  return {
-    city: getValue("city"),
-    store: getValue("store"),
-    productName: getValue("productName"),
-    productCode: getValue("productCode"),
-    retailPrice: getValue("retailPrice"),
-    promoPrice: getValue("promoPrice"),
-  };
-}
-
-function sanitizeCopyValue(value: string | null | undefined) {
-  if (!value) {
-    return "\\N";
-  }
-
-  return value
-    .replace(/\\/g, "\\\\")
-    .replace(/\t/g, " ")
-    .replace(/\r?\n/g, " ")
-    .trim();
-}
-
-function formatArray(values: string[]) {
-  if (!values.length) {
-    return "";
-  }
-
-  return values.join(",");
-}
-
-function requireArgValue(args: string[], flag: string) {
-  const index = args.indexOf(flag);
-  if (index < 0 || index + 1 >= args.length) {
-    return null;
-  }
-
-  return args[index + 1];
-}
-
-function parseRecordedAt(value: string) {
-  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value)) {
-    return null;
-  }
-
-  const parsed = new Date(`${value}T00:00:00Z`);
-  return Number.isNaN(parsed.getTime()) ? null : value;
-}
-
-async function listCsvFiles(targetPath: string) {
-  const stats = await fs.promises.stat(targetPath);
-  if (stats.isFile()) {
-    return targetPath.toLowerCase().endsWith(".csv") ? [targetPath] : [];
-  }
-
-  if (!stats.isDirectory()) {
-    return [];
-  }
-
-  const entries = await fs.promises.readdir(targetPath, { withFileTypes: true });
-  const results: string[] = [];
-
-  for (const entry of entries) {
-    const entryPath = path.join(targetPath, entry.name);
-    if (entry.isDirectory()) {
-      const nested = await listCsvFiles(entryPath);
-      results.push(...nested);
-      continue;
-    }
-
-    if (entry.isFile() && entry.name.toLowerCase().endsWith(".csv")) {
-      results.push(entryPath);
+    } finally {
+      lines.close();
+      stream.destroy();
     }
   }
-
-  return results;
 }
 
-async function writeRow(
-  stream: NodeJS.WritableStream,
-  row: ImportRow,
-  counters: { rows: number }
-) {
-  const line = [
-    sanitizeCopyValue(row.storeId),
-    sanitizeCopyValue(row.storeName),
-    sanitizeCopyValue(row.storeCity ?? null),
-    sanitizeCopyValue(row.productId),
-    sanitizeCopyValue(row.productSlug),
-    sanitizeCopyValue(row.productName),
-    sanitizeCopyValue(row.productDescription),
-    sanitizeCopyValue(formatArray(row.productCategories)),
-    sanitizeCopyValue(row.canonicalKey ?? null),
-    sanitizeCopyValue(row.priceId),
-    row.amount.toString(),
-    row.isPromo ? "true" : "false",
-    sanitizeCopyValue(row.recordedAt),
-    sanitizeCopyValue(row.source),
-  ].join("\t");
-
-  counters.rows += 1;
-
-  if (!stream.write(`${line}\n`)) {
-    await new Promise<void>((resolve) => stream.once("drain", resolve));
-  }
-}
-
-async function processCsvFile(options: {
-  filePath: string;
-  recordedAt: string;
-  storeIdCache: Map<string, string>;
-  productIdCache: Map<string, string>;
-  stream: NodeJS.WritableStream;
-  counters: { rows: number; files: number; skipped: number };
-}) {
-  const fileStream = fs.createReadStream(options.filePath, { encoding: "utf-8" });
-  const lineReader = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
-  let headers: string[] | null = null;
-  const source = path.basename(options.filePath);
-
-  for await (const line of lineReader) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      continue;
-    }
-
-    if (!headers) {
-      headers = parseCsvLine(trimmed);
-      const missingHeaders = Object.values(REQUIRED_HEADERS).filter(
-        (header) => !headers?.includes(header)
-      );
-
-      if (missingHeaders.length) {
-        throw new Error(`Missing headers in ${source}: ${missingHeaders.join(", ")}`);
-      }
-
-      continue;
-    }
-
-    const row = toCsvRow(headers, parseCsvLine(trimmed));
-    if (!row?.productName || !row.store) {
-      options.counters.skipped += 1;
-      continue;
-    }
-
-    const promoAmount = parsePrice(row.promoPrice);
-    const retailAmount = parsePrice(row.retailPrice);
-    const amount = promoAmount ?? retailAmount;
-    if (amount === null || amount <= 0) {
-      options.counters.skipped += 1;
-      continue;
-    }
-    const isPromo = promoAmount !== null && promoAmount > 0;
-
-    const normalizedCity = normalizeCity(row.city, row.store);
-    const storeKey = `${row.store.trim()}|${normalizedCity ?? ""}`;
-    let storeId = options.storeIdCache.get(storeKey);
-    if (!storeId) {
-      storeId = randomUUID();
-      options.storeIdCache.set(storeKey, storeId);
-    }
-
-    const normalizedName = normalizeProductName(row.productName);
-    const slug = buildSlug(row.productCode, normalizedName);
-    const canonicalKey = buildCanonicalKey(normalizedName);
-    let productId = options.productIdCache.get(slug);
-    if (!productId) {
-      productId = randomUUID();
-      options.productIdCache.set(slug, productId);
-    }
-
-    const description = normalizedName;
-    const categories = getProductCategories(normalizedName, description);
-
-    await writeRow(options.stream, {
-      storeId,
-      storeName: row.store.trim(),
-      storeCity: normalizedCity,
-      productId,
-      productSlug: slug,
-      productName: normalizedName,
-      productDescription: description,
-      productCategories: categories,
-      canonicalKey,
-      priceId: randomUUID(),
-      amount,
-      isPromo,
-      recordedAt: options.recordedAt,
-      source,
-    }, options.counters);
-  }
-
-  options.counters.files += 1;
-}
-
-async function ensureStagingTable(client: Client) {
-  await client.query(`
-    CREATE UNLOGGED TABLE IF NOT EXISTS csv_price_staging (
-      store_id TEXT,
-      store_name TEXT,
-      store_city TEXT,
-      product_id TEXT,
-      product_slug TEXT,
-      product_name TEXT,
-      product_description TEXT,
-      product_categories TEXT,
-      canonical_key TEXT,
-      price_id TEXT,
-      amount NUMERIC,
-      is_promo BOOLEAN,
-      recorded_at DATE,
-      source TEXT
-    );
-  `);
-
-  await client.query("TRUNCATE csv_price_staging;");
-}
-
-async function upsertFromStaging(client: Client) {
+async function importBatch(client: Client, batch: Batch, currency: string) {
+  const batchId = hash("csv-v1", batch.date, currency, batch.digest);
+  const logicalKey = hash("csv-v1", currency, batch.logicalKey);
   await client.query("BEGIN");
   try {
-    await client.query(`
-      INSERT INTO "Store" ("id", "name", "city", "createdAt", "updatedAt")
-      SELECT DISTINCT ON (s.store_name, s.store_city)
-        s.store_id,
-        s.store_name,
-        s.store_city,
-        NOW(),
-        NOW()
-      FROM csv_price_staging s
-      LEFT JOIN "Store" existing
-        ON existing.name = s.store_name
-        AND existing.city IS NOT DISTINCT FROM s.store_city
-      WHERE existing.id IS NULL;
-    `);
-
-    await client.query(`
-      INSERT INTO "Product" ("id", "slug", "name", "description", "categories", "canonicalKey", "createdAt", "updatedAt")
-      SELECT DISTINCT ON (s.product_slug)
-        s.product_id,
-        s.product_slug,
-        s.product_name,
-        s.product_description,
-        string_to_array(s.product_categories, ','),
-        s.canonical_key,
-        NOW(),
-        NOW()
-      FROM csv_price_staging s
-      ON CONFLICT ("slug") DO UPDATE SET
-        "name" = EXCLUDED."name",
-        "description" = EXCLUDED."description",
-        "categories" = EXCLUDED."categories",
-        "canonicalKey" = EXCLUDED."canonicalKey",
-        "updatedAt" = NOW();
-    `);
-
-    await client.query(`
-      INSERT INTO "Price" ("id", "amount", "currency", "recordedAt", "productId", "storeId", "source", "isPromo")
-      SELECT
-        s.price_id,
-        s.amount::double precision,
-        'EUR',
-        s.recorded_at::timestamp,
-        p.id,
-        st.id,
-        s.source,
-        COALESCE(s.is_promo, false)
-      FROM csv_price_staging s
-      JOIN "Product" p ON p.slug = s.product_slug
-      JOIN "Store" st ON st.name = s.store_name AND st.city IS NOT DISTINCT FROM s.store_city
-      ON CONFLICT ("id") DO NOTHING;
-    `);
-
+    // Serialize import writers; temp staging remains isolated even across connections.
+    await client.query("SELECT pg_advisory_xact_lock(735192046)");
+    if ((await client.query('SELECT id FROM "CsvImportBatch" WHERE id = $1', [batchId])).rowCount) {
+      await client.query("COMMIT");
+      console.log(`Skipped completed input: ${batch.archive}`);
+      return;
+    }
+    if ((await client.query('SELECT id FROM "CsvImportBatch" WHERE "logicalKey" = $1', [logicalKey])).rowCount) {
+      throw new Error(`Changed contents for an already imported day/source set: ${batch.archive}. Review correction separately.`);
+    }
+    await client.query(`CREATE TEMP TABLE csv_price_staging (
+      store_id TEXT, store_name TEXT, store_city TEXT, product_id TEXT, product_slug TEXT,
+      product_name TEXT, product_categories TEXT, canonical_key TEXT, price_id TEXT,
+      amount NUMERIC, is_promo BOOLEAN, recorded_at DATE, currency TEXT, source TEXT, product_key TEXT
+    ) ON COMMIT DROP`);
+    const copy = client.query(copyFrom("COPY csv_price_staging FROM STDIN WITH (FORMAT text)")) as unknown as Writable;
+    await pipeline(Readable.from(stagedRows(batch, currency)), copy);
+    await client.query(`UPDATE csv_price_staging s SET product_slug=p.slug
+      FROM "CsvProductIdentity" i JOIN "Product" p ON p.id=i."productId"
+      WHERE i."sourceKey"=s.product_key`);
+    const conflicts = await client.query(`SELECT price_id FROM csv_price_staging
+      GROUP BY price_id HAVING COUNT(DISTINCT (amount,is_promo,product_slug)) > 1 LIMIT 1`);
+    if (conflicts.rowCount) throw new Error("Conflicting observations in batch");
+    await client.query(`INSERT INTO "Store" (id,name,city,"createdAt","updatedAt")
+      SELECT DISTINCT ON (s.store_name,s.store_city) s.store_id,s.store_name,s.store_city,NOW(),NOW()
+      FROM csv_price_staging s WHERE NOT EXISTS (
+        SELECT 1 FROM "Store" e WHERE e.name=s.store_name AND e.city IS NOT DISTINCT FROM s.store_city)`);
+    // Imported product metadata never overwrites editorial descriptions or reviewed grouping.
+    await client.query(`INSERT INTO "Product" (id,slug,name,description,categories,"canonicalKey","createdAt","updatedAt")
+      SELECT DISTINCT ON (product_slug) product_id,product_slug,product_name,NULL,
+        string_to_array(product_categories,','),canonical_key,NOW(),NOW()
+      FROM csv_price_staging ORDER BY product_slug,product_name
+      ON CONFLICT (slug) DO NOTHING`);
+    await client.query(`INSERT INTO "CsvProductIdentity" ("sourceKey","productId")
+      SELECT DISTINCT ON (s.product_key) s.product_key,p.id FROM csv_price_staging s
+      JOIN "Product" p ON p.slug=s.product_slug ORDER BY s.product_key,p.id
+      ON CONFLICT ("sourceKey") DO NOTHING`);
+    const changed = await client.query(`SELECT p.id FROM "Price" p JOIN csv_price_staging s ON p.id=s.price_id
+      WHERE p.amount IS DISTINCT FROM s.amount::double precision OR p."isPromo" IS DISTINCT FROM s.is_promo LIMIT 1`);
+    if (changed.rowCount) throw new Error("Changed existing observation; explicit correction review required");
+    const inserted = await client.query(`INSERT INTO "Price" (id,amount,currency,"recordedAt","productId","storeId",source,"isPromo")
+      SELECT DISTINCT ON (s.price_id) s.price_id,s.amount::double precision,s.currency,s.recorded_at::timestamp,p.id,st.id,s.source,s.is_promo
+      FROM csv_price_staging s JOIN "Product" p ON p.slug=s.product_slug
+      JOIN LATERAL (SELECT id FROM "Store" WHERE name=s.store_name AND city IS NOT DISTINCT FROM s.store_city ORDER BY id LIMIT 1) st ON true
+      ORDER BY s.price_id ON CONFLICT (id) DO NOTHING`);
+    await client.query(`INSERT INTO "CsvImportBatch" (id,"logicalKey",source,"recordedAt",currency,"rowCount","completedAt")
+      VALUES ($1,$2,$3,$4,$5,$6,NOW())`, [batchId, logicalKey, batch.archive, batch.date, currency, inserted.rowCount]);
     await client.query("COMMIT");
+    console.log(`Imported ${batch.archive}: ${inserted.rowCount} prices`);
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -383,71 +109,54 @@ async function upsertFromStaging(client: Client) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const targetPath = requireArgValue(args, "--path") ?? requireArgValue(args, "-p");
-  const recordedAtRaw = requireArgValue(args, "--date") ?? requireArgValue(args, "-d");
-
-  if (!targetPath || !recordedAtRaw) {
-    console.error("Usage: npm run import:csv -- --path <file-or-folder> --date YYYY-MM-DD");
-    process.exit(1);
+  const value = (flag: string) => {
+    const i = args.indexOf(flag);
+    if (i < 0) return undefined;
+    if (!args[i + 1] || args[i + 1].startsWith("--")) throw new Error(`Missing value for ${flag}`);
+    return args[i + 1];
+  };
+  const target = value("--path") ?? value("-p");
+  const date = value("--date") ?? value("-d");
+  const currency = value("--currency");
+  if (!target || !currency || !["EUR", "BGN"].includes(currency)) {
+    throw new Error("Usage: npm run import:csv -- --path <ZIP/CSV/folder> --currency EUR|BGN [--date YYYY-MM-DD] [--dry-run] [--report path.json]");
   }
-
-  const recordedAt = parseRecordedAt(recordedAtRaw);
-  if (!recordedAt) {
-    console.error("Invalid --date value. Expected YYYY-MM-DD.");
-    process.exit(1);
-  }
-
-  const csvFiles = await listCsvFiles(targetPath);
-  if (!csvFiles.length) {
-    console.error("No CSV files found for provided path.");
-    process.exit(1);
-  }
-
-  const ssl = process.env.PGSSLINSECURE === "true" ? { rejectUnauthorized: false } : undefined;
-  const client = new Client({ connectionString: process.env.DATABASE_URL, ssl });
-  await client.connect();
-
+  // Current public charts are EUR-only; BGN needs a separate conversion design.
+  if (currency !== "EUR") throw new Error("BGN is not supported by the current EUR-only UI. No data imported.");
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "price-hunter-input-"));
+  let client: Client | undefined;
   try {
-    await ensureStagingTable(client);
-
-    const copyStream = client.query(
-      copyFrom(
-        "COPY csv_price_staging (store_id, store_name, store_city, product_id, product_slug, product_name, product_description, product_categories, canonical_key, price_id, amount, is_promo, recorded_at, source) FROM STDIN WITH (FORMAT text, DELIMITER E'\\t', NULL '\\N')"
-      )
-    ) as unknown as NodeJS.WritableStream;
-
-    const counters = { rows: 0, files: 0, skipped: 0 };
-    const storeIdCache = new Map<string, string>();
-    const productIdCache = new Map<string, string>();
-
-    for (const filePath of csvFiles) {
-      await processCsvFile({
-        filePath,
-        recordedAt,
-        storeIdCache,
-        productIdCache,
-        stream: copyStream,
-        counters,
-      });
+    execFileSync("python3", [path.join(__dirname, "prepare-price-input.py"), path.resolve(target), temp, date ?? ""], { stdio: "inherit" });
+    const batches: Batch[] = JSON.parse(fs.readFileSync(path.join(temp, "manifest.json"), "utf8"));
+    const report = batches.map((b) => ({ archive: b.archive, date: b.date, files: b.files.length,
+      rows: b.files.reduce((sum, f) => sum + f.rows, 0),
+      repairedQuoteRows: b.files.reduce((sum, f) => sum + (f.repairedQuoteRows ?? 0), 0),
+      rejected: b.rejected }));
+    console.log(JSON.stringify(report.map(({ rejected, ...summary }) => ({
+      ...summary, rejectedCount: rejected.length, firstRejections: rejected.slice(0, 5),
+    })), null, 2));
+    const reportPath = value("--report");
+    if (reportPath) fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+    if (args.includes("--dry-run")) return;
+    const url = new URL(process.env.DATABASE_URL ?? "");
+    if (args.includes("--quarantine")) {
+      if (!reportPath || !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
+        throw new Error("Quarantine trials require a local database and --report for the audit trail.");
+      }
+    } else if (batches.some((b) => b.rejected.length)) {
+      throw new Error("Rejected rows found. Review input or use local --quarantine with --report.");
     }
-
-    copyStream.end();
-    await new Promise<void>((resolve, reject) => {
-      copyStream.on("finish", resolve);
-      copyStream.on("error", reject);
-    });
-
-    await upsertFromStaging(client);
-
-    console.log(
-      `Imported ${counters.rows} rows from ${counters.files} file(s). Skipped ${counters.skipped} rows.`
-    );
+    console.log(`Target: ${url.hostname}:${url.port || "5432"}${url.pathname}`);
+    client = new Client({ connectionString: process.env.DATABASE_URL,
+      ssl: process.env.PGSSLINSECURE === "true" ? { rejectUnauthorized: false } : undefined });
+    await client.connect();
+    for (const batch of batches) await importBatch(client, batch, currency);
   } finally {
-    await client.end();
+    try {
+      if (client) await client.end();
+    } finally {
+      fs.rmSync(temp, { recursive: true, force: true });
+    }
   }
 }
-
-main().catch((error) => {
-  console.error("Bulk CSV import failed:", error);
-  process.exit(1);
-});
+main().catch((error) => { console.error(error instanceof Error ? error.message : "Import failed"); process.exitCode = 1; });

@@ -1,4 +1,5 @@
 import type { CuratedProfile } from "@/lib/curated-profiles";
+import ProductQuestions from "./ProductQuestions";
 
 export default function StapleProfile({ profile, bg }: { profile: CuratedProfile; bg: boolean }) {
   const locale = bg ? "bg" : "en";
@@ -27,5 +28,6 @@ export default function StapleProfile({ profile, bg }: { profile: CuratedProfile
     <p>{bg ? "Проверено: " : "Checked: "}{profile.checked}. {bg
       ? "При разлика следвайте етикета на конкретната опаковка. Цените по-долу идват от отделните търговски записи, а не от сайтовете на производителите."
       : "If details differ, follow your pack’s label. Prices below come from separate retailer records, not the producer websites."}</p>
+    <ProductQuestions profile={profile} bg={bg} />
   </section>;
 }

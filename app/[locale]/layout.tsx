@@ -1,6 +1,5 @@
 import Link from "next/link";
 import ThemeToggle from "@/app/ThemeToggle";
-import LocaleSwitcher from "@/app/LocaleSwitcher";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -35,7 +34,7 @@ export default async function LocaleLayout({
           </Link>
           <input id="nav-toggle" className="nav-toggle" type="checkbox" />
           <label htmlFor="nav-toggle" className="nav-toggle-label">
-            Menu
+            Меню
           </label>
           <nav className="nav-links">
             <Link href={`${basePath}/products`} className="nav-alert">
@@ -46,7 +45,6 @@ export default async function LocaleLayout({
               {dict.nav.dashboard}
               {alertCount > 0 ? <span className="nav-badge">{alertLabel}</span> : null}
             </Link>
-            <LocaleSwitcher locale={normalizedLocale} />
             <ThemeToggle />
             {session ? (
               <form action="/api/auth/logout" method="post" className="nav-logout">
@@ -69,7 +67,7 @@ export default async function LocaleLayout({
             <h3>{dict.footer.title}</h3>
             <p>{dict.footer.body}</p>
             <p style={{ marginTop: 8, color: "var(--ink-muted)" }}>
-              Products tracked: {productCount}
+              Проследявани продукти: {productCount}
             </p>
           </div>
           <div className="footer-links">

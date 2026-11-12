@@ -19,6 +19,11 @@ export function middleware(request: NextRequest) {
   }
 
   const pathnameLocale = pathname.split("/")[1];
+  if (pathnameLocale === "en") {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = `/${defaultLocale}${pathname.slice(3)}`;
+    return NextResponse.redirect(redirectUrl);
+  }
   if (locales.includes(pathnameLocale as (typeof locales)[number])) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-pathname", pathname);

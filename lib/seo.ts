@@ -9,9 +9,8 @@ export function getLocaleAlternates(path: string, locale: Locale): Metadata["alt
   return {
     canonical: withLocale(locale, path),
     languages: {
-      en: withLocale("en", path),
       bg: withLocale("bg", path),
-      "x-default": withLocale("en", path),
+      "x-default": withLocale("bg", path),
     },
   };
 }

@@ -37,7 +37,18 @@ model Session {
   expiresAt DateTime
 }
 
+model CsvImportBatch {
+  id          String   @id
+  logicalKey  String   @unique
+  source      String
+  recordedAt  DateTime @db.Date
+  currency    String
+  rowCount    Int
+  completedAt DateTime @default(now())
+}
+
 model Product {
+  csvIdentities          CsvProductIdentity[]
   id                     String                     @id @default(cuid())
   slug                   String                     @unique
   name                   String
@@ -52,6 +63,13 @@ model Product {
   priceAlertNotifications PriceAlertNotification[]
 
   @@index([canonicalKey])
+}
+
+model CsvProductIdentity {
+  sourceKey String @id
+  productId String
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@index([productId])
 }
 
 model Store {

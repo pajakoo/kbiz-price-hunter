@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 function localeFromPathname(pathname: string | null) {
   if (!pathname) {
-    return "en";
+    return "bg";
   }
 
-  return pathname.startsWith("/bg") ? "bg" : "en";
+  return pathname.startsWith("/en") ? "en" : "bg";
 }
 
 export default function HtmlLangSync() {

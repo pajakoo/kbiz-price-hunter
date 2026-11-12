@@ -30,7 +30,7 @@ export async function sendPriceDropEmail(payload: PriceDropEmail) {
   const baseUrl = getBaseUrl();
   const formattedDate = payload.recordedAt.toISOString().slice(0, 10);
   const subject = `Price drop: ${payload.productName}`;
-  const body = `Price dropped for ${payload.productName} at ${payload.storeName} on ${formattedDate}.\nFrom ${payload.fromAmount} ${payload.currency} to ${payload.toAmount} ${payload.currency}.\n${baseUrl}/en/products/${payload.productSlug}`;
+  const body = `Price dropped for ${payload.productName} at ${payload.storeName} on ${formattedDate}.\nFrom ${payload.fromAmount} ${payload.currency} to ${payload.toAmount} ${payload.currency}.\n${baseUrl}/bg/products/${payload.productSlug}`;
 
   const response = await fetch(RESEND_ENDPOINT, {
     method: "POST",
@@ -53,4 +53,16 @@ export async function sendPriceDropEmail(payload: PriceDropEmail) {
   }
 
   return { ok: true, skipped: false };
+}
+
+export function getEmailProviderStatus() {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.ALERT_FROM_EMAIL;
+
+  return {
+    provider: "resend",
+    configured: Boolean(apiKey && fromEmail),
+    hasApiKey: Boolean(apiKey),
+    hasFromEmail: Boolean(fromEmail),
+  };
 }

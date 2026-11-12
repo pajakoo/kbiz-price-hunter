@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const pageSizeParam = Number.parseInt(searchParams.get("pageSize") ?? "30", 10);
   const query = searchParams.get("q");
   const categoriesParam = searchParams.get("categories") ?? "";
-  const localeParam = searchParams.get("locale") ?? "en";
+  const localeParam = searchParams.get("locale") ?? "bg";
 
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
   const pageSize = Number.isFinite(pageSizeParam) && pageSizeParam > 0

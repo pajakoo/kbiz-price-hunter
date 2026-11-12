@@ -1,3 +1,6 @@
+import { getStapleProduct } from "../../lib/staple-profiles";
+import ProductQuestions from "./ProductQuestions";
+
 export const yogurtSlug = "kiselo-mlyako-bozhentsi-2-2-400g";
 export const yogurtSource = "https://www.elvimilk.bg/bg/products/kiselo-mljako-ay-bojenci-au-4/";
 
@@ -8,6 +11,7 @@ export function yogurtDescription(bg: boolean) {
 }
 
 export default function YogurtProfile({ bg }: { bg: boolean }) {
+  const profile = getStapleProduct(yogurtSlug);
   const nutrition = [
     [bg ? "Енергия" : "Energy", "218 kJ / 52 kcal"],
     [bg ? "Мазнини" : "Fat", "2.2 g"],
@@ -39,8 +43,10 @@ export default function YogurtProfile({ bg }: { bg: boolean }) {
         </div>
       </div>
       <p>{bg ? "Източник: " : "Source: "}<a href={yogurtSource} rel="noopener noreferrer" target="_blank">{bg ? "ЕЛВИ — Кисело мляко Боженци" : "ELVI — Bozhentsi yogurt"}</a>
-        {bg ? ". Проверено на 15.10.2026 г. Данните са за варианта 2.2%, а не за 3.6% или 4%. При разлика следвайте етикета." : ". Checked 15 October 2026. These details describe the 2.2% variant, not 3.6% or 4%. If information differs, follow the label."}
+        {bg ? ". Проверено: " : ". Checked: "}{profile?.checked}.
+        {bg ? " Данните са за варианта 2.2%, а не за 3.6% или 4%. При разлика следвайте етикета." : " These details describe the 2.2% variant, not 3.6% or 4%. If information differs, follow the label."}
       </p>
+      {profile && <ProductQuestions profile={{ ...profile, unit: "kg" }} bg={bg} />}
     </section>
   );
 }

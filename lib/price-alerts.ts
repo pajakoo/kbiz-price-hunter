@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { sendPriceDropEmail } from "@/lib/sendgrid";
+import { sendPriceDropEmail } from "@/lib/resend";
 
 type PriceAlertContext = {
   product: { id: string; name: string; slug: string };

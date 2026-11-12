@@ -32,7 +32,7 @@ export default function ProductPriceChart(props: Props) {
     {...props} comparisonStores={stores} removeStore={toggle} />;
 }
 
-function PriceChart({ slug, currencyLabel, city = "", curated = false, locale = "en", comparisonStores, removeStore }: Props & {
+function PriceChart({ slug, currencyLabel, city = "", curated = false, locale = "bg", comparisonStores, removeStore }: Props & {
   comparisonStores: ComparisonStore[]; removeStore: (store: ComparisonStore) => void;
 }) {
   const [series, setSeries] = useState<(StoreSeries & { storeId?: string })[]>([]);

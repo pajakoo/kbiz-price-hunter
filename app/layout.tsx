@@ -22,7 +22,7 @@ const bodyFont = Manrope({
 export const metadata: Metadata = {
   title: "Ловец на цени",
   description:
-    "Find the best grocery prices across stores with a simple, searchable catalog.",
+    "Сравнявайте записаните цени на продукти по магазини и проследявайте историята им.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "https://kbiz-price-hunter.example"
   ),
@@ -35,7 +35,7 @@ export default async function RootLayout({
 }) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const requestHeaders = await headers();
-  const localeFromHeader = requestHeaders.get("x-locale") === "bg" ? "bg" : "en";
+  const localeFromHeader = requestHeaders.get("x-locale") === "en" ? "en" : "bg";
 
   return (
     <html lang={localeFromHeader}>

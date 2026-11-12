@@ -19,12 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const productEntries = locales.flatMap((locale) =>
     products.map((product) => ({
       url: `${baseUrl}/${locale}/products/${product.slug}`,
-      alternates: {
-        languages: {
-          en: `${baseUrl}/en/products/${product.slug}`,
-          bg: `${baseUrl}/bg/products/${product.slug}`,
-        },
-      },
+      alternates: { languages: { bg: `${baseUrl}/bg/products/${product.slug}` } },
     }))
   );
 
@@ -32,38 +27,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((category) => products.some((product) => product.categories.includes(category.slug)))
     .flatMap((category) => locales.map((locale) => ({
       url: `${baseUrl}/${locale}/products/category/${category.slug}`,
-      alternates: {
-        languages: {
-          en: `${baseUrl}/en/products/category/${category.slug}`,
-          bg: `${baseUrl}/bg/products/category/${category.slug}`,
-        },
-      },
+      alternates: { languages: { bg: `${baseUrl}/bg/products/category/${category.slug}` } },
     })));
 
   return [
     {
-      url: `${baseUrl}/en`,
-      alternates: { languages: { en: `${baseUrl}/en`, bg: `${baseUrl}/bg` } },
-    },
-    {
       url: `${baseUrl}/bg`,
-      alternates: { languages: { en: `${baseUrl}/en`, bg: `${baseUrl}/bg` } },
-    },
-    {
-      url: `${baseUrl}/en/products`,
-      alternates: {
-        languages: { en: `${baseUrl}/en/products`, bg: `${baseUrl}/bg/products` },
-      },
+      alternates: { languages: { bg: `${baseUrl}/bg` } },
     },
     {
       url: `${baseUrl}/bg/products`,
-      alternates: {
-        languages: { en: `${baseUrl}/en/products`, bg: `${baseUrl}/bg/products` },
-      },
+      alternates: { languages: { bg: `${baseUrl}/bg/products` } },
     },
     ...categoryEntries,
     ...locales.map(locale => ({ url: `${baseUrl}/${locale}/products/staples`,
-      alternates: { languages: { en: `${baseUrl}/en/products/staples`, bg: `${baseUrl}/bg/products/staples` } } })),
+      alternates: { languages: { bg: `${baseUrl}/bg/products/staples` } } })),
     ...productEntries,
   ];
 }
